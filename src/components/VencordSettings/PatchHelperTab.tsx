@@ -382,6 +382,7 @@ function PatchHelper() {
                     <Forms.FormTitle className={Margins.top20}>Code</Forms.FormTitle>
                     <CodeBlock lang="js" content={code} />
                     <Button onClick={() => Clipboard.copy(code)}>Copy to Clipboard</Button>
+                    <Button onClick={() => Clipboard.copy("```json\n" + code + "\n```")}>Copy As Codeblock</Button>
                 </>
             )}
         </SettingsTab>
