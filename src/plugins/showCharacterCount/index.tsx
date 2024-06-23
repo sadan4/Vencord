@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-// import { disableStyle, enableStyle } from "@api/Styles";
 import definePlugin from "@utils/types";
 import { findByPropsLazy } from "@webpack";
 import { Text, UserStore } from "@webpack/common";
