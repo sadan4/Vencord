@@ -11,7 +11,7 @@ import { reporterData } from "debug/reporterData";
 import { Settings } from "Vencord";
 
 import { logger, PORT, settings } from ".";
-import { extractModule, extractOrThrow, FindData, findModuleId, FindType, mkRegexFind, parseNode, PatchData, SendData, toggleEnabled, } from "./util";
+import { extractAndPatchModule, extractModule, FindData, findModuleId, FindType, mkRegexFind, parseNode, PatchData, SendData, toggleEnabled, } from "./util";
 
 export function stopWs() {
     socket?.close(1000, "Plugin Stopped");
@@ -20,7 +20,7 @@ export function stopWs() {
 
 export let socket: WebSocket | undefined;
 
-export function initWs(isManual = false) {
+export function initWs(isManual = false, isReconnect = false, reconnectAttempt = 0) {
     let wasConnected = isManual;
     let hasErrored = false;
     const ws = socket = new WebSocket(`ws://localhost:${PORT}`);
@@ -56,14 +56,27 @@ export function initWs(isManual = false) {
         }
 
 
-        (settings.store.notifyOnAutoConnect || isManual) && Toasts.show({
-            message: "Connected to WebSocket",
-            id: Toasts.genId(),
-            type: Toasts.Type.SUCCESS,
-            options: {
-                position: Toasts.Position.TOP
-            }
-        });
+        if (isReconnect) {
+            reconnectAttempt = 0;
+            isReconnect = false;
+            Toasts.show({
+                message: "Connected to WebSocket",
+                id: Toasts.genId(),
+                type: Toasts.Type.SUCCESS,
+                options: {
+                    position: Toasts.Position.TOP
+                }
+            });
+        } else {
+            (settings.store.notifyOnAutoConnect || isManual) && Toasts.show({
+                message: "Connected to WebSocket",
+                id: Toasts.genId(),
+                type: Toasts.Type.SUCCESS,
+                options: {
+                    position: Toasts.Position.TOP
+                }
+            });
+        }
     });
 
     ws.addEventListener("error", e => {
@@ -84,9 +97,40 @@ export function initWs(isManual = false) {
     });
 
     ws.addEventListener("close", e => {
-        if (!wasConnected || hasErrored) return;
+        if (!isReconnect && (!wasConnected || hasErrored)) return;
 
         logger.info("Dev Companion Disconnected:", e.code, e.reason);
+
+        if (e.code === 1006) { // Abnormal closure
+            if (reconnectAttempt < 5) {
+                logger.warn("Reconnecting to Dev Companion in 5s");
+                if (!isReconnect) {
+                    Toasts.show({
+                        message: "Dev Companion Disconnected - Attempting to reconnect...",
+                        id: Toasts.genId(),
+                        type: Toasts.Type.FAILURE,
+                        options: {
+                            position: Toasts.Position.TOP
+                        }
+                    });
+                }
+                setTimeout(() => initWs(false, true, ++reconnectAttempt), 5000);
+                return;
+            }
+
+            logger.error("Failed to reconnect to Dev Companion after 5 attempts");
+            Toasts.show({
+                message: "Dev Companion Reconnect Failed",
+                id: Toasts.genId(),
+                type: Toasts.Type.FAILURE,
+                options: {
+                    position: Toasts.Position.TOP
+                }
+            });
+            return;
+        }
+
+        if (isReconnect) return;
 
         Toasts.show({
             message: "Dev Companion Disconnected",
@@ -137,7 +181,7 @@ export function initWs(isManual = false) {
             }
             case "diff": {
                 try {
-                    const { extractType, idOrSearch } = data;
+                    const { extractType, idOrSearch, replacement, pluginName, applyPatch } = data;
                     switch (extractType) {
                         case "id": {
                             if (typeof idOrSearch !== "number")
@@ -146,7 +190,7 @@ export function initWs(isManual = false) {
                                 type: "diff",
                                 ok: true,
                                 data: {
-                                    patched: extractOrThrow(idOrSearch),
+                                    patched: applyPatch && replacement?.length ? extractAndPatchModule(pluginName, idOrSearch, replacement) : extractModule(idOrSearch, applyPatch),
                                     source: extractModule(idOrSearch, false)
                                 },
                                 moduleNumber: idOrSearch
@@ -160,7 +204,7 @@ export function initWs(isManual = false) {
 
                             else
                                 moduleId = +findModuleId(mkRegexFind(idOrSearch));
-                            const p = extractOrThrow(moduleId);
+                            const p = replacement?.length ? extractAndPatchModule(pluginName, moduleId, replacement) : extractModule(moduleId, true);
                             const p2 = extractModule(moduleId, false);
                             console.log(p, p2, "done");
                             replyData({
@@ -176,6 +220,7 @@ export function initWs(isManual = false) {
                         }
                     }
                 } catch (error) {
+                    console.error(error);
                     reply(String(error));
                 }
                 break;
@@ -187,7 +232,7 @@ export function initWs(isManual = false) {
             }
             case "extract": {
                 try {
-                    const { extractType, idOrSearch } = data;
+                    const { extractType, idOrSearch, replacement, pluginName, applyPatch } = data;
                     switch (extractType) {
                         case "id": {
                             if (typeof idOrSearch !== "number")
@@ -197,7 +242,7 @@ export function initWs(isManual = false) {
                                 replyData({
                                     type: "extract",
                                     ok: true,
-                                    data: extractModule(idOrSearch),
+                                    data: extractModule(idOrSearch, applyPatch),
                                     moduleNumber: idOrSearch
                                 });
 
@@ -213,7 +258,7 @@ export function initWs(isManual = false) {
                             replyData({
                                 type: "extract",
                                 ok: true,
-                                data: extractModule(moduleId),
+                                data: applyPatch && replacement?.length ? extractAndPatchModule(pluginName, moduleId, replacement) : extractModule(moduleId, applyPatch),
                                 moduleNumber: moduleId
                             });
                             break;

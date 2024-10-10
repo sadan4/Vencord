@@ -6,7 +6,7 @@
 
 import { showNotice } from "@api/Notices";
 import { Settings } from "@api/Settings";
-import { canonicalizeMatch } from "@utils/patches";
+import { canonicalizeMatch, canonicalizeReplace } from "@utils/patches";
 import { CodeFilter, stringMatches, wreq } from "@webpack";
 import { Toasts } from "@webpack/common";
 
@@ -36,10 +36,11 @@ export interface FunctionNode {
 }
 export interface PatchData {
     find: string;
-    replacement: {
-        match: StringNode | RegexNode;
-        replace: StringNode | FunctionNode;
-    }[];
+    replacement: PatchRepl[];
+}
+export interface PatchRepl {
+    match: StringNode | RegexNode;
+    replace: StringNode | FunctionNode;
 }
 export interface FindData {
     type: string;
@@ -74,6 +75,31 @@ export function extractModule(id: number, patched = companionSettings.store.useP
         throw new Error("No module found for module id:" + id);
     return patched ? module.$$vencordPatchedSource ?? module.original.toString() : module.original.toString();
 }
+
+/**
+ * extracts the module and applies the given patches before returning, throws if no module is found
+ * @param pluginName plugin name
+ * @param id module id
+ * @param replacements patches to apply
+ * @returns patched module
+ * @throws {Error} if no module is found
+ */
+export function extractAndPatchModule(pluginName: string = "YourPlugin", id: number, replacements: PatchRepl[]): string {
+    const originalModule = wreq.m[id];
+
+    if (!originalModule)
+        throw new Error("No module found for module id:" + id);
+
+    let patchedModule = originalModule.original.toString();
+
+    for (const replacement of replacements as PatchRepl[]) {
+        const { match, replace } = replacement;
+        patchedModule = patchedModule.replace(canonicalizeMatch(parseNode(match)), canonicalizeReplace(parseNode(replace), pluginName));
+    }
+
+    return patchedModule;
+}
+
 export function parseNode(node: Node) {
     switch (node.type) {
         case "string":
