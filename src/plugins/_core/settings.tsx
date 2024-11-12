@@ -19,6 +19,7 @@
 import { Settings } from "@api/Settings";
 import BackupAndRestoreTab from "@components/VencordSettings/BackupAndRestoreTab";
 import CloudTab from "@components/VencordSettings/CloudTab";
+import Bisect from "@components/VencordSettings/Bisect"
 import PatchHelperTab from "@components/VencordSettings/PatchHelperTab";
 import PluginsTab from "@components/VencordSettings/PluginsTab";
 import ThemesTab from "@components/VencordSettings/ThemesTab";
@@ -129,6 +130,12 @@ export default definePlugin({
                 label: "Patch Helper",
                 element: PatchHelperTab,
                 className: "vc-patch-helper"
+            },
+            IS_DEV && {
+                section: "VencordBisect",
+                label: "Vencord Bisect",
+                element: Bisect,
+                className: "vc-bisect"
             },
             ...this.customSections.map(func => func(SectionTypes)),
             {
