@@ -1,20 +1,13 @@
 name: Test Patches
 on:
     workflow_dispatch:
-    schedule:
-        # Every day at midnight
-        - cron: 0 0 * * *
 
 jobs:
     TestPlugins:
-        if: github.repository == 'Vendicated/Vencord'
+        if: github.repository == 'sadan4/Vencord'
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v4
-              if: ${{ github.event_name == 'schedule' }}
-              with:
-                  ref: dev
 
             - uses: actions/checkout@v4
               if: ${{ github.event_name == 'workflow_dispatch' }}
