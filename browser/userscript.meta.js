@@ -23,3 +23,8 @@
 // https://github.com/violentmonkey/violentmonkey/issues/997
 
 // this is a compiled and minified version of Vencord. For the source code, visit the GitHub repo
+"use strict";
+if (window.Vencord)
+    throw new Error(
+        "You can not use more than one instance of vencord at once. please uninstall all others"
+    );
