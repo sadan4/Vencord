@@ -21,7 +21,7 @@ import esbuild from "esbuild";
 import { readdir } from "fs/promises";
 import { join } from "path";
 
-import { BUILD_TIMESTAMP, commonOpts, exists, globPlugins, IS_DEV, IS_REPORTER, IS_STANDALONE, IS_UPDATER_DISABLED, resolvePluginName, VERSION, commonRendererPlugins, watch } from "./common.mjs";
+import { BUILD_TIMESTAMP, commonOpts, exists, globPlugins, IS_DEV, IS_REPORTER, IS_STANDALONE, IS_UPDATER_DISABLED, resolvePluginName, VERSION, commonRendererPlugins, watch, nativePluginImports } from "./common.mjs";
 
 const defines = {
     IS_STANDALONE,
@@ -131,6 +131,7 @@ await Promise.all([
         sourcemap,
         plugins: [
             globPlugins("discordDesktop"),
+            nativePluginImports,
             ...commonRendererPlugins
         ],
         define: {
@@ -180,6 +181,7 @@ await Promise.all([
         sourcemap,
         plugins: [
             globPlugins("vencordDesktop"),
+            nativePluginImports,
             ...commonRendererPlugins
         ],
         define: {

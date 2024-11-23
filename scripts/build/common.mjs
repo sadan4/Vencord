@@ -24,7 +24,7 @@ import esbuild from "esbuild";
 import { constants as FsConstants, readFileSync } from "fs";
 import { access, readdir, readFile } from "fs/promises";
 import { minify as minifyHtml } from "html-minifier-terser";
-import { join, relative } from "path";
+import { dirname, join, relative, resolve, sep } from "path";
 import { promisify } from "util";
 
 import { getPluginTarget } from "../utils.mjs";
@@ -32,6 +32,8 @@ import { builtinModules } from "module";
 
 /** @type {import("../../package.json")} */
 const PackageJSON = JSON.parse(readFileSync("package.json"));
+
+export const pluginDirs = ["plugins/_api", "plugins/_core", "plugins", "userplugins"];
 
 export const VERSION = PackageJSON.version;
 // https://reproducible-builds.org/docs/source-date-epoch/
@@ -97,7 +99,115 @@ export const makeAllPackagesExternalPlugin = {
         build.onResolve({ filter }, args => ({ path: args.path, external: true }));
     }
 };
+/**
+ * @type {string} path1
+ * @type {string} path2
+ */
+function arePathsEqual(path1, path2) {
+    return resolve(path1) === resolve(path2)
+}
+/**
+ * @param {string} path -- any path in the plugins dir
+ * @returns {Promise<[string, string] | undefined>} -- plugins base dir and plugins entrypoint
+ */
+async function getPluginBaseFileFromPath(path) {
+        const a = (pluginDirs.map(x => join("src", x))).filter(x => path.includes(x)).flatMap(x => {
+        const maybe = relative(x, path);
+        if (!arePathsEqual(path, join(x, maybe)) || maybe.startsWith(".") || maybe.startsWith("_")) return [];
+        if(!maybe.includes(sep)) return [dirname(path), path];
+        const basepath = join(x, maybe.substring(0, maybe.indexOf(sep)));
+        // console.log(`A: ${basepath} R: ${path}, maybe: ${maybe}, x: ${x}`)
+        return resolve(basepath);
+    });
+    switch(a.length){
+        case 0:
+            return undefined;
+        case 1:
+            return [a[0], await tsOrTsx(a[0])];
+        case 2:
+            return a;
+        default:
+            throw new Error("more than one possible plugin dir found")
+    }
+}
+/**
+ * @type {string} path the path of the folder to check
+ */
+async function tsOrTsx(path) {
+    if(await exists(join(path, "index.tsx"))) {
+        return join(path, "index.tsx")
+    } else if (await exists(join(path, "index.ts"))) {
+        return join(path, "index.ts");
+    }
+    return undefined;
+}
+/**
+ * @type {string} path
+ * @returns {Promise<string>}
+ */
+async function pluginMainToPluginName(path) {
+            const text = await readFile(path, "utf8");
 
+            const pluginName = PluginDefinitionNameMatcher.exec(text)?.[3];
+
+            if(!pluginName) throw new Error(`Invalid plugin: ${path} most contain definePlugin call with simple string name property as first property`)
+
+    return pluginName;
+}
+/**
+ * @type {esbuild.Plugin}
+ */
+export const nativePluginImports = {
+    name: "nativeImports",
+    setup(build) {
+        const filter = /^(?:\.?(?:\/?\.\.)+|\.)\/native(?:\?name=(.+))?$/;
+
+        const nonRelativeFilter = /^plugins\/.*?\/native$/;
+        build.onResolve({
+            filter: nonRelativeFilter
+        }, async args => {
+                const path = args.path.endsWith(".ts") ? join("src", args.path) : join("src", `${args.path}.ts`)
+                const pluginMain = (await getPluginBaseFileFromPath(path))?.[1] ?? false;
+
+                if(!pluginMain) return;
+
+                const pluginName = await pluginMainToPluginName(pluginMain);
+
+                return {
+                    namespace: "native-imports",
+                    path: args.path,
+                    pluginData: {
+                        pluginName,
+                    },
+                }
+        });
+        build.onResolve({filter}, async args => {
+            const nameArg = args.path.match(filter)?.[1]
+
+            if(nameArg) return {namespace: "native-imports", path: args.path, pluginData: {pluginName: nameArg}};
+
+            const pluginPath = (await getPluginBaseFileFromPath(args.importer))?.[1] ?? false;
+
+            if (!pluginPath) return;
+
+            const pluginName = pluginMainToPluginName(pluginPath);
+
+            return {
+                namespace: "native-imports",
+                path: args.path,
+                pluginData: {
+                    pluginName,
+                },
+
+            }
+        });
+        build.onLoad({filter: /./, namespace: "native-imports"}, async args => {
+            return {
+                contents: `module.exports = window.VencordNative.pluginHelpers.${args.pluginData.pluginName};`
+            }
+        });
+    }
+}
 /**
  * @type {(kind: "web" | "discordDesktop" | "vencordDesktop") => import("esbuild").Plugin}
  */
@@ -113,7 +223,6 @@ export const globPlugins = kind => ({
         });
 
         build.onLoad({ filter, namespace: "import-plugins" }, async () => {
-            const pluginDirs = ["plugins/_api", "plugins/_core", "plugins", "userplugins"];
             let code = "";
             let pluginsCode = "\n";
             let metaCode = "\n";
