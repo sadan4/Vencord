@@ -6,6 +6,15 @@ on:
                 type: text
                 required: true
                 description: the branch to run the reporter on
+                default: dev
+            repo: 
+                type: choice
+                required: true
+                description: the repo to run in
+                options:
+                    - Vendicated/Vencord
+                    - sadan4/vencord
+                default: Vendicated/Vencord
 
 jobs:
     TestPlugins:
@@ -17,6 +26,7 @@ jobs:
               if: ${{ github.event_name == 'workflow_dispatch' }}
               with:
                   ref: "${{ inputs.branch }}"
+                  repository: "${{ inputs.repo }}"
 
             - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
 
