@@ -1,6 +1,11 @@
 name: Test Patches
 on:
     workflow_dispatch:
+        inputs:
+            branch:
+                type: text
+                required: true
+                description: the branch to run the reporter on
 
 jobs:
     TestPlugins:
@@ -10,6 +15,8 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               if: ${{ github.event_name == 'workflow_dispatch' }}
+              with:
+                  ref: "${{ inputs.branch }}"
 
             - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
 
