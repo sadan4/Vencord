@@ -132,7 +132,7 @@ function BisectPanel({ data, update }: BisectProps) {
                 beforeBisect: data.beforeBisect
             };
             setPluginStates(newState.currentSplit);
-            DataStore.set(DS_KEY, newState).then(update);
+            DataStore.set(DS_KEY, newState).then(update).then(() => window.location.reload());
         }}>The bug occurs</Button>
         <Button onClick={() => {
             const { currentSplit } = data;
@@ -154,7 +154,7 @@ function BisectPanel({ data, update }: BisectProps) {
                 beforeBisect: data.beforeBisect
             };
             setPluginStates(newState.currentSplit);
-            DataStore.set(DS_KEY, newState).then(update);
+            DataStore.set(DS_KEY, newState).then(update).then(() => window.location.reload());
         }}>The bug is gone</Button>
         <Button color={Button.Colors.RED} onClick={() => {
             for (const plugin of data.beforeBisect) {
