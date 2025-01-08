@@ -250,6 +250,7 @@ function Popout({
                 )
                     .map(object => {
                         return <Menu.MenuCheckboxItem
+                            key={object.id}
                             id={`vc-allowed-mentions-${title}-popout-${object.id}`}
                             label={object.name!}
                             checked={all || ids.has(object.id)}

@@ -70,18 +70,18 @@ export default definePlugin({
             ]
         },
         {
-            find: ".stackedAttachedBar]:!",
+            find: "activeCommandOptionStates",
             replacement: [
                 // Add AllowedMentionsBar when not replying
                 // Will never render if above patch fails
                 {
-                    match: /(?<=pendingReply:\i}=(\i),.+?)null!=(\i)&&(\i).push\(\(0,\i.jsx\)\(\i.\i,{reply:\i,/,
-                    replace: "null == $2 && null != $1.mentions && $3.push($self.AllowedMentionsBar({ mentions: $1.mentions, channel: $1.channel })), $&"
+                    match: /(?<=pendingReply:(\i)}=.+?)null!=(\i)&&(\i).push\(\(0,\i.jsx\)\(\i.\i,{reply:\i,/,
+                    replace: "null != $1?.message?.mentions && $3.push($self.AllowedMentionsBar({ mentions: $1.message.mentions, channel: $1.channel })), $&"
                 }
             ]
         },
         {
-            find: ".Messages.REPLYING_TO.format({",
+            find: "#{intl::REPLYING_TO}",
             replacement: [
                 // Add AllowedMentionsBar to reply bar when replying
                 {
@@ -91,7 +91,7 @@ export default definePlugin({
             ]
         },
         {
-            find: ".Messages.EVERYONE_POPOUT_BODY",
+            find: "#{intl::EVERYONE_POPOUT_BODY}",
             replacement: [
                 // Remove the warning popout for large server when @everyone mention is off
                 {
@@ -105,7 +105,7 @@ export default definePlugin({
             replacement: [
                 // Patch sending allowed_mentions for forum creation
                 {
-                    match: /(?<=.Endpoints.CHANNEL_THREADS\((\i.id)\)\+"\?use_nested_fields=true".+?message:\{)/,
+                    match: /(?<=\i\.\i\.CHANNEL_THREADS\((\i.id)\)\+"\?use_nested_fields=true".+?message:\{)/,
                     replace: "allowed_mentions: $self.patchForumAllowedMentions($1),"
                 }
             ]
