@@ -101,9 +101,8 @@
     display: flex;
     flex-direction: column;
     padding: 0.2rem;
-    justify-content: center;
     align-items: flex-start;
-    align-content: flex-start;
+    place-content: flex-start center;
     overflow: hidden;
 }
 
@@ -170,9 +169,16 @@
     /* these importants are necessary, it applies a width and height through inline styles */
     height: 10px !important;
     width: 10px !important;
+    margin-top: 4px;
     background-color: var(--interactive-normal);
     border-color: var(--interactive-normal);
     color: var(--interactive-normal);
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+#vc-spotify-progress-bar:hover > [class^="slider"] [class^="grabber"] {
+    opacity: 1;
 }
 
 #vc-spotify-progress-text {

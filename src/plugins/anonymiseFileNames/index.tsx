@@ -67,21 +67,28 @@ const settings = definePluginSettings({
 
 export default definePlugin({
     name: "AnonymiseFileNames",
-    authors: [Devs.obscurity],
+    authors: [Devs.fawn],
     description: "Anonymise uploaded file names",
     patches: [
         {
-            find: "instantBatchUpload:function",
+            find: "instantBatchUpload:",
             replacement: {
-                match: /uploadFiles:(.{1,2}),/,
+                match: /uploadFiles:(\i),/,
                 replace:
                     "uploadFiles:(...args)=>(args[0].uploads.forEach(f=>f.filename=$self.anonymise(f)),$1(...args)),",
             },
         },
         {
-            find: ".Messages.ATTACHMENT_UTILITIES_SPOILER",
+            find: 'addFilesTo:"message.attachments"',
             replacement: {
-                match: /(?<=children:\[)(?=.{10,80}tooltip:.{0,100}\i\.\i\.Messages\.ATTACHMENT_UTILITIES_SPOILER)/,
+                match: /(\i.uploadFiles\((\i),)/,
+                replace: "$2.forEach(f=>f.filename=$self.anonymise(f)),$1"
+            }
+        },
+        {
+            find: "#{intl::ATTACHMENT_UTILITIES_SPOILER}",
+            replacement: {
+                match: /(?<=children:\[)(?=.{10,80}tooltip:.{0,100}#{intl::ATTACHMENT_UTILITIES_SPOILER})/,
                 replace: "arguments[0].canEdit!==false?$self.renderIcon(arguments[0]):null,"
             },
         },

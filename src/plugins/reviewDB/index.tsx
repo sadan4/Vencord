@@ -18,31 +18,45 @@
 
 import "./style.css";
 
-import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import ErrorBoundary from "@components/ErrorBoundary";
-import ExpandableHeader from "@components/ExpandableHeader";
-import { OpenExternalIcon } from "@components/Icons";
+import { NotesIcon, OpenExternalIcon } from "@components/Icons";
 import { Devs } from "@utils/constants";
-import { Logger } from "@utils/Logger";
+import { classes } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { Alerts, Menu, Parser, useState } from "@webpack/common";
+import { findByPropsLazy } from "@webpack";
+import { Alerts, Button, Menu, Parser, TooltipContainer } from "@webpack/common";
 import { Guild, User } from "discord-types/general";
 
 import { Auth, initAuth, updateAuth } from "./auth";
 import { openReviewsModal } from "./components/ReviewModal";
-import ReviewsView from "./components/ReviewsView";
-import { NotificationType } from "./entities";
+import { NotificationType, ReviewType } from "./entities";
 import { getCurrentUserInfo, readNotification } from "./reviewDbApi";
 import { settings } from "./settings";
 import { showToast } from "./utils";
 
-const guildPopoutPatch: NavContextMenuPatchCallback = (children, props: { guild: Guild, onClose(): void; }) => () => {
+const RoleButtonClasses = findByPropsLazy("button", "buttonInner", "icon", "banner");
+
+const guildPopoutPatch: NavContextMenuPatchCallback = (children, { guild }: { guild: Guild, onClose(): void; }) => {
+    if (!guild) return;
     children.push(
         <Menu.MenuItem
             label="View Reviews"
             id="vc-rdb-server-reviews"
             icon={OpenExternalIcon}
-            action={() => openReviewsModal(props.guild.id, props.guild.name)}
+            action={() => openReviewsModal(guild.id, guild.name, ReviewType.Server)}
+        />
+    );
+};
+
+const userContextPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User, onClose(): void; }) => {
+    if (!user) return;
+    children.push(
+        <Menu.MenuItem
+            label="View Reviews"
+            id="vc-rdb-user-reviews"
+            icon={OpenExternalIcon}
+            action={() => openReviewsModal(user.id, user.username, ReviewType.User)}
         />
     );
 };
@@ -53,13 +67,34 @@ export default definePlugin({
     authors: [Devs.mantikafasi, Devs.Ven],
 
     settings,
+    contextMenus: {
+        "guild-header-popout": guildPopoutPatch,
+        "guild-context": guildPopoutPatch,
+        "user-context": userContextPatch,
+        "user-profile-actions": userContextPatch,
+        "user-profile-overflow-menu": userContextPatch
+    },
 
     patches: [
         {
-            find: "showBorder:null",
+            find: ".BITE_SIZE,user:",
             replacement: {
-                match: /user:(\i),setNote:\i,canDM.+?\}\)/,
-                replace: "$&,$self.getReviewsComponent($1)"
+                match: /{profileType:\i\.\i\.BITE_SIZE,children:\[/,
+                replace: "$&$self.BiteSizeReviewsButton({user:arguments[0].user}),"
+            }
+        },
+        {
+            find: ".FULL_SIZE,user:",
+            replacement: {
+                match: /{profileType:\i\.\i\.FULL_SIZE,children:\[/,
+                replace: "$&$self.BiteSizeReviewsButton({user:arguments[0].user}),"
+            }
+        },
+        {
+            find: 'location:"UserProfilePanel"',
+            replacement: {
+                match: /{profileType:\i\.\i\.PANEL,children:\[/,
+                replace: "$&$self.BiteSizeReviewsButton({user:arguments[0].user}),"
             }
         }
     ],
@@ -69,17 +104,8 @@ export default definePlugin({
     },
 
     async start() {
-        addContextMenuPatch("guild-header-popout", guildPopoutPatch);
-
         const s = settings.store;
         const { lastReviewId, notifyReviews } = s;
-
-        const legacy = s as any as { token?: string; };
-        if (legacy.token) {
-            await updateAuth({ token: legacy.token });
-            legacy.token = undefined;
-            new Logger("ReviewDB").info("Migrated legacy settings");
-        }
 
         await initAuth();
 
@@ -127,32 +153,20 @@ export default definePlugin({
         }, 4000);
     },
 
-    stop() {
-        removeContextMenuPatch("guild-header-popout", guildPopoutPatch);
-    },
-
-    getReviewsComponent: ErrorBoundary.wrap((user: User) => {
-        const [reviewCount, setReviewCount] = useState<number>();
-
+    BiteSizeReviewsButton: ErrorBoundary.wrap(({ user }: { user: User; }) => {
         return (
-            <ExpandableHeader
-                headerText="User Reviews"
-                onMoreClick={() => openReviewsModal(user.id, user.username)}
-                moreTooltipText={
-                    reviewCount && reviewCount > 50
-                        ? `View all ${reviewCount} reviews`
-                        : "Open Review Modal"
-                }
-                onDropDownClick={state => settings.store.reviewsDropdownState = !state}
-                defaultState={settings.store.reviewsDropdownState}
-            >
-                <ReviewsView
-                    discordId={user.id}
-                    name={user.username}
-                    onFetchReviews={r => setReviewCount(r.reviewCount)}
-                    showInput
-                />
-            </ExpandableHeader>
+            <TooltipContainer text="View Reviews">
+                <Button
+                    onClick={() => openReviewsModal(user.id, user.username, ReviewType.User)}
+                    look={Button.Looks.FILLED}
+                    size={Button.Sizes.NONE}
+                    color={RoleButtonClasses.bannerColor}
+                    className={classes(RoleButtonClasses.button, RoleButtonClasses.icon, RoleButtonClasses.banner)}
+                    innerClassName={classes(RoleButtonClasses.buttonInner, RoleButtonClasses.icon, RoleButtonClasses.banner)}
+                >
+                    <NotesIcon height={16} width={16} />
+                </Button>
+            </TooltipContainer>
         );
-    }, { message: "Failed to render Reviews" })
+    }, { noop: true })
 });

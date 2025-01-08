@@ -20,10 +20,11 @@ import { definePluginSettings, Settings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, FluxDispatcher as Dispatcher, MessageStore, PermissionsBits, PermissionStore, SelectedChannelStore, UserStore } from "@webpack/common";
+import { ChannelStore, ComponentDispatch, FluxDispatcher as Dispatcher, MessageStore, PermissionsBits, PermissionStore, SelectedChannelStore, UserStore } from "@webpack/common";
 import { Message } from "discord-types/general";
 
 const Kangaroo = findByPropsLazy("jumpToMessage");
+const RelationshipStore = findByPropsLazy("getRelationships", "isBlocked");
 
 const isMac = navigator.platform.includes("Mac"); // bruh
 let replyIdx = -1;
@@ -54,29 +55,29 @@ const settings = definePluginSettings({
 
 export default definePlugin({
     name: "QuickReply",
-    authors: [Devs.obscurity, Devs.Ven, Devs.pylix],
+    authors: [Devs.fawn, Devs.Ven, Devs.pylix],
     description: "Reply to (ctrl + up/down) and edit (ctrl + shift + up/down) messages via keybinds",
     settings,
 
     start() {
-        Dispatcher.subscribe("DELETE_PENDING_REPLY", onDeletePendingReply);
-        Dispatcher.subscribe("MESSAGE_END_EDIT", onEndEdit);
-        Dispatcher.subscribe("MESSAGE_START_EDIT", onStartEdit);
-        Dispatcher.subscribe("CREATE_PENDING_REPLY", onCreatePendingReply);
         document.addEventListener("keydown", onKeydown);
     },
 
     stop() {
-        Dispatcher.unsubscribe("DELETE_PENDING_REPLY", onDeletePendingReply);
-        Dispatcher.unsubscribe("MESSAGE_END_EDIT", onEndEdit);
-        Dispatcher.unsubscribe("MESSAGE_START_EDIT", onStartEdit);
-        Dispatcher.unsubscribe("CREATE_PENDING_REPLY", onCreatePendingReply);
         document.removeEventListener("keydown", onKeydown);
     },
-});
 
-const onDeletePendingReply = () => replyIdx = -1;
-const onEndEdit = () => editIdx = -1;
+    flux: {
+        DELETE_PENDING_REPLY() {
+            replyIdx = -1;
+        },
+        MESSAGE_END_EDIT() {
+            editIdx = -1;
+        },
+        MESSAGE_START_EDIT: onStartEdit,
+        CREATE_PENDING_REPLY: onCreatePendingReply
+    }
+});
 
 function calculateIdx(messages: Message[], id: string) {
     const idx = messages.findIndex(m => m.id === id);
@@ -108,6 +109,8 @@ function onKeydown(e: KeyboardEvent) {
     if (!isUp && e.key !== "ArrowDown") return;
     if (!isCtrl(e) || isAltOrMeta(e)) return;
 
+    e.preventDefault();
+
     if (e.shiftKey)
         nextEdit(isUp);
     else
@@ -137,6 +140,10 @@ function getNextMessage(isUp: boolean, isReply: boolean) {
     if (!isReply) { // we are editing so only include own
         const meId = UserStore.getCurrentUser().id;
         messages = messages.filter(m => m.author.id === meId);
+    }
+
+    if (Vencord.Plugins.isPluginEnabled("NoBlockedMessages")) {
+        messages = messages.filter(m => !RelationshipStore.isBlocked(m.author.id));
     }
 
     const mutate = (i: number) => isUp
@@ -189,9 +196,10 @@ function nextReply(isUp: boolean) {
         channel,
         message,
         shouldMention: shouldMention(message),
-        showMentionToggle: channel.guild_id !== null && message.author.id !== meId,
+        showMentionToggle: channel.isPrivate() && message.author.id !== meId,
         _isQuickReply: true
     });
+    ComponentDispatch.dispatchToLastSubscribed("TEXTAREA_FOCUS");
     jumpIfOffScreen(channel.id, message.id);
 }
 

@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { LazyComponent, useAwaiter, useForceUpdater } from "@utils/react";
-import { find, findByPropsLazy } from "@webpack";
+import { useAwaiter, useForceUpdater } from "@utils/react";
+import { findByCodeLazy, findByPropsLazy, findComponentByCodeLazy } from "@webpack";
 import { Forms, React, RelationshipStore, useRef, UserStore } from "@webpack/common";
 
 import { Auth, authorize } from "../auth";
-import { Review } from "../entities";
+import { Review, ReviewType } from "../entities";
 import { addReview, getReviews, Response, REVIEWS_PER_PAGE } from "../reviewDbApi";
 import { settings } from "../settings";
 import { cl, showToast } from "../utils";
 import ReviewComponent from "./ReviewComponent";
 
-
-const { Editor, Transforms } = findByPropsLazy("Editor", "Transforms");
-const { ChatInputTypes } = findByPropsLazy("ChatInputTypes");
-
-const InputComponent = LazyComponent(() => find(m => m.default?.type?.render?.toString().includes("default.CHANNEL_TEXT_AREA")).default);
+const Transforms = findByPropsLazy("insertNodes", "textToText");
+const Editor = findByPropsLazy("start", "end", "toSlateRange");
+const ChatInputTypes = findByPropsLazy("FORM");
+const InputComponent = findComponentByCodeLazy("disableThemedBackground", "CHANNEL_TEXT_AREA");
+const createChannelRecordFromServer = findByCodeLazy(".GUILD_TEXT])", "fromServer)");
 
 interface UserProps {
     discordId: string;
@@ -45,6 +45,7 @@ interface Props extends UserProps {
     page?: number;
     scrollToTop?(): void;
     hideOwnReview?: boolean;
+    type: ReviewType;
 }
 
 export default function ReviewsView({
@@ -56,6 +57,7 @@ export default function ReviewsView({
     page = 1,
     showInput = false,
     hideOwnReview = false,
+    type,
 }: Props) {
     const [signal, refetch] = useForceUpdater(true);
 
@@ -80,6 +82,7 @@ export default function ReviewsView({
                 reviews={reviewData!.reviews}
                 hideOwnReview={hideOwnReview}
                 profileId={discordId}
+                type={type}
             />
 
             {showInput && (
@@ -94,7 +97,7 @@ export default function ReviewsView({
     );
 }
 
-function ReviewList({ refetch, reviews, hideOwnReview, profileId }: { refetch(): void; reviews: Review[]; hideOwnReview: boolean; profileId: string; }) {
+function ReviewList({ refetch, reviews, hideOwnReview, profileId, type }: { refetch(): void; reviews: Review[]; hideOwnReview: boolean; profileId: string; type: ReviewType; }) {
     const myId = UserStore.getCurrentUser().id;
 
     return (
@@ -111,7 +114,7 @@ function ReviewList({ refetch, reviews, hideOwnReview, profileId }: { refetch():
 
             {reviews?.length === 0 && (
                 <Forms.FormText className={cl("placeholder")}>
-                    Looks like nobody reviewed this user yet. You could be the first!
+                    Looks like nobody reviewed this {type === ReviewType.User ? "user" : "server"} yet. You could be the first!
                 </Forms.FormText>
             )}
         </div>
@@ -119,25 +122,15 @@ function ReviewList({ refetch, reviews, hideOwnReview, profileId }: { refetch():
 }
 
 
-export function ReviewsInputComponent({ discordId, isAuthor, refetch, name }: { discordId: string, name: string; isAuthor: boolean; refetch(): void; }) {
+export function ReviewsInputComponent(
+    { discordId, isAuthor, refetch, name, modalKey }: { discordId: string, name: string; isAuthor: boolean; refetch(): void; modalKey?: string; }
+) {
     const { token } = Auth;
     const editorRef = useRef<any>(null);
     const inputType = ChatInputTypes.FORM;
     inputType.disableAutoFocus = true;
 
-    const channel = {
-        flags_: 256,
-        guild_id_: null,
-        id: "0",
-        getGuildId: () => null,
-        isPrivate: () => true,
-        isActiveThread: () => false,
-        isArchivedLockedThread: () => false,
-        isDM: () => true,
-        roles: { "0": { permissions: 0n } },
-        getRecipientId: () => "0",
-        hasFlag: () => false,
-    };
+    const channel = createChannelRecordFromServer({ id: "0", type: 1 });
 
     return (
         <>
@@ -160,6 +153,7 @@ export function ReviewsInputComponent({ discordId, isAuthor, refetch, name }: { 
                     type={inputType}
                     disableThemedBackground={true}
                     setEditorRef={ref => editorRef.current = ref}
+                    parentModalKey={modalKey}
                     textValue=""
                     onSubmit={
                         async res => {

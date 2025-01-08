@@ -17,7 +17,9 @@
 */
 
 import { Command } from "@api/Commands";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { FluxEvents } from "@webpack/types";
+import { JSX } from "react";
 import { Promisable } from "type-fest";
 
 // exists to export default definePlugin({...})
@@ -28,14 +30,19 @@ export default function definePlugin<P extends PluginDef>(p: P & Record<string, 
 export type ReplaceFn = (match: string, ...groups: string[]) => string;
 
 export interface PatchReplacement {
+    /** The match for the patch replacement. If you use a string it will be implicitly converted to a RegExp */
     match: string | RegExp;
+    /** The replacement string or function which returns the string for the patch replacement */
     replace: string | ReplaceFn;
+    /** A function which returns whether this patch replacement should be applied */
     predicate?(): boolean;
 }
 
 export interface Patch {
     plugin: string;
-    find: string;
+    /** A string or RegExp which is only include/matched in the module code you wish to patch. Prefer only using a RegExp if a simple string test is not enough */
+    find: string | RegExp;
+    /** The replacement(s) for the module being patched */
     replacement: PatchReplacement | PatchReplacement[];
     /** Whether this patch should apply to multiple modules */
     all?: boolean;
@@ -43,6 +50,7 @@ export interface Patch {
     noWarn?: boolean;
     /** Only apply this set of replacements if all of them succeed. Use this if your replacements depend on each other */
     group?: boolean;
+    /** A function which returns whether this patch should be applied */
     predicate?(): boolean;
 }
 
@@ -65,19 +73,23 @@ export interface PluginDef {
     stop?(): void;
     patches?: Omit<Patch, "plugin">[];
     /**
-     * List of commands. If you specify these, you must add CommandsAPI to dependencies
+     * List of commands that your plugin wants to register
      */
     commands?: Command[];
     /**
      * A list of other plugins that your plugin depends on.
      * These will automatically be enabled and loaded before your plugin
-     * Common examples are CommandsAPI, MessageEventsAPI...
+     * Generally these will be API plugins
      */
     dependencies?: string[],
     /**
      * Whether this plugin is required and forcefully enabled
      */
     required?: boolean;
+    /**
+     * Whether this plugin should be hidden from the user
+     */
+    hidden?: boolean;
     /**
      * Whether this plugin should be enabled by default, but can be disabled
      */
@@ -87,6 +99,10 @@ export interface PluginDef {
      * @default StartAt.WebpackReady
      */
     startAt?: StartAt,
+    /**
+     * Which parts of the plugin can be tested by the reporter. Defaults to all parts
+     */
+    reporterTestable?: number;
     /**
      * Optionally provide settings that the user can configure in the Plugins tab of settings.
      * @deprecated Use `settings` instead
@@ -113,8 +129,12 @@ export interface PluginDef {
      * Allows you to subscribe to Flux events
      */
     flux?: {
-        [E in FluxEvents]?: (event: any) => void;
+        [E in FluxEvents]?: (event: any) => void | Promise<void>;
     };
+    /**
+     * Allows you to manipulate context menus
+     */
+    contextMenus?: Record<string, NavContextMenuPatchCallback>;
     /**
      * Allows you to add custom actions to the Vencord Toolbox.
      * The key will be used as text for the button
@@ -131,6 +151,13 @@ export const enum StartAt {
     DOMContentLoaded = "DOMContentLoaded",
     /** Once Discord's core webpack modules have finished loading, so as soon as things like react and flux are available */
     WebpackReady = "WebpackReady"
+}
+
+export const enum ReporterTestable {
+    None = 1 << 1,
+    Start = 1 << 2,
+    Patches = 1 << 3,
+    FluxEvents = 1 << 4
 }
 
 export const enum OptionType {
@@ -233,7 +260,7 @@ export interface PluginSettingSliderDef {
     stickToMarkers?: boolean;
 }
 
-interface IPluginOptionComponentProps {
+export interface IPluginOptionComponentProps {
     /**
      * Run this when the value changes.
      *
@@ -283,6 +310,8 @@ export interface DefinedSettings<
 > {
     /** Shorthand for `Vencord.Settings.plugins.PluginName`, but with typings */
     store: SettingsStore<Def> & PrivateSettings;
+    /** Shorthand for `Vencord.PlainSettings.plugins.PluginName`, but with typings */
+    plain: SettingsStore<Def> & PrivateSettings;
     /**
      * React hook for getting the settings for this plugin
      * @param filter optional filter to avoid rerenders for irrelevent settings

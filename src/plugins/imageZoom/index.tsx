@@ -16,14 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { definePluginSettings } from "@api/Settings";
 import { disableStyle, enableStyle } from "@api/Styles";
 import { makeRange } from "@components/PluginSettings/components";
+import { debounce } from "@shared/debounce";
 import { Devs } from "@utils/constants";
-import { debounce } from "@utils/debounce";
 import definePlugin, { OptionType } from "@utils/types";
-import { ContextMenuApi, Menu, React, ReactDOM } from "@webpack/common";
+import { Menu, ReactDOM } from "@webpack/common";
+import { JSX } from "react";
 import type { Root } from "react-dom/client";
 
 import { Magnifier, MagnifierProps } from "./components/Magnifier";
@@ -80,25 +81,25 @@ export const settings = definePluginSettings({
 });
 
 
-const imageContextMenuPatch: NavContextMenuPatchCallback = children => () => {
+const imageContextMenuPatch: NavContextMenuPatchCallback = children => {
+    const { square, nearestNeighbour } = settings.use(["square", "nearestNeighbour"]);
+
     children.push(
         <Menu.MenuGroup id="image-zoom">
             <Menu.MenuCheckboxItem
                 id="vc-square"
                 label="Square Lens"
-                checked={settings.store.square}
+                checked={square}
                 action={() => {
-                    settings.store.square = !settings.store.square;
-                    ContextMenuApi.closeContextMenu();
+                    settings.store.square = !square;
                 }}
             />
             <Menu.MenuCheckboxItem
                 id="vc-nearest-neighbour"
                 label="Nearest Neighbour"
-                checked={settings.store.nearestNeighbour}
+                checked={nearestNeighbour}
                 action={() => {
-                    settings.store.nearestNeighbour = !settings.store.nearestNeighbour;
-                    ContextMenuApi.closeContextMenu();
+                    settings.store.nearestNeighbour = !nearestNeighbour;
                 }}
             />
             <Menu.MenuControlItem
@@ -156,22 +157,18 @@ export default definePlugin({
 
     patches: [
         {
-            find: "Messages.OPEN_IN_BROWSER",
+            find: ".contain,SCALE_DOWN:",
             replacement: {
-                // there are 2 image thingies. one for carosuel and one for the single image.
-                // so thats why i added global flag.
-                // also idk if this patch is good, should it be more specific?
-                // https://regex101.com/r/xfvNvV/1
-                match: /return.{1,200}\.wrapper.{1,200}src:\i,/g,
-                replace: `$&id: '${ELEMENT_ID}',`
+                match: /\.slide,\i\),/g,
+                replace: `$&id:"${ELEMENT_ID}",`
             }
         },
 
         {
-            find: "handleImageLoad=",
+            find: ".handleImageLoad)",
             replacement: [
                 {
-                    match: /placeholderVersion:\i,/,
+                    match: /placeholderVersion:\i,(?=.{0,50}children:)/,
                     replace: "...$self.makeProps(this),$&"
                 },
 
@@ -183,19 +180,20 @@ export default definePlugin({
                 {
                     match: /componentWillUnmount\(\){/,
                     replace: "$&$self.unMountMagnifier();"
+                },
+
+                {
+                    match: /componentDidUpdate\(\i\){/,
+                    replace: "$&$self.updateMagnifier(this);"
                 }
             ]
-        },
-        {
-            find: ".carouselModal",
-            replacement: {
-                match: /(?<=\.carouselModal.{0,100}onClick:)\i,/,
-                replace: "()=>{},"
-            }
         }
     ],
 
     settings,
+    contextMenus: {
+        "image-context": imageContextMenuPatch
+    },
 
     // to stop from rendering twice /shrug
     currentMagnifierElement: null as React.FunctionComponentElement<MagnifierProps & JSX.IntrinsicAttributes> | null,
@@ -223,6 +221,11 @@ export default definePlugin({
         }
     },
 
+    updateMagnifier(instance) {
+        this.unMountMagnifier();
+        this.renderMagnifier(instance);
+    },
+
     unMountMagnifier() {
         this.root?.unmount();
         this.currentMagnifierElement = null;
@@ -245,7 +248,6 @@ export default definePlugin({
 
     start() {
         enableStyle(styles);
-        addContextMenuPatch("image-context", imageContextMenuPatch);
         this.element = document.createElement("div");
         this.element.classList.add("MagnifierContainer");
         document.body.appendChild(this.element);
@@ -256,6 +258,5 @@ export default definePlugin({
         // so componenetWillUnMount gets called if Magnifier component is still alive
         this.root && this.root.unmount();
         this.element?.remove();
-        removeContextMenuPatch("image-context", imageContextMenuPatch);
     }
 });

@@ -18,6 +18,7 @@
 
 import { Settings } from "@api/Settings";
 import { disableStyle, enableStyle } from "@api/Styles";
+import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 
@@ -31,7 +32,7 @@ function toggleHoverControls(value: boolean) {
 export default definePlugin({
     name: "SpotifyControls",
     description: "Adds a Spotify player above the account panel",
-    authors: [Devs.Ven, Devs.afn, Devs.KraXen72],
+    authors: [Devs.Ven, Devs.afn, Devs.KraXen72, Devs.Av32000],
     options: {
         hoverControls: {
             description: "Show controls on hover",
@@ -43,16 +44,21 @@ export default definePlugin({
             type: OptionType.BOOLEAN,
             description: "Open Spotify URIs instead of Spotify URLs. Will only work if you have Spotify installed and might not work on all platforms",
             default: false
+        },
+        previousButtonRestartsTrack: {
+            type: OptionType.BOOLEAN,
+            description: "Restart currently playing track when pressing the previous button if playtime is >3s",
+            default: true
         }
     },
     patches: [
         {
-            find: "showTaglessAccountPanel:",
+            find: "this.isCopiedStreakGodlike",
             replacement: {
-                // return React.createElement(AccountPanel, { ..., showTaglessAccountPanel: blah })
-                match: /return ?(.{0,30}\(.{1,3},\{[^}]+?,showTaglessAccountPanel:.+?\}\))/,
-                // return [Player, Panel]
-                replace: "return [$self.renderPlayer(),$1]"
+                // react.jsx)(AccountPanel, { ..., showTaglessAccountPanel: blah })
+                match: /(?<=\i\.jsxs?\)\()(\i),{(?=[^}]*?userTag:\i,hidePrivateData:)/,
+                // react.jsx(WrapperComponent, { VencordOriginal: AccountPanel, ...
+                replace: "$self.PanelWrapper,{VencordOriginal:$1,"
             }
         },
         {
@@ -60,7 +66,7 @@ export default definePlugin({
             replacement: [{
                 // Adds POST and a Marker to the SpotifyAPI (so we can easily find it)
                 match: /get:(\i)\.bind\(null,(\i\.\i)\.get\)/,
-                replace: "post:$1.bind(null,$2.post),$&"
+                replace: "post:$1.bind(null,$2.post),vcSpotifyMarker:1,$&"
             },
             {
                 // Spotify Connect API returns status 202 instead of 204 when skipping tracks.
@@ -69,15 +75,40 @@ export default definePlugin({
                 replace: "false",
             }]
         },
-        // Discord doesn't give you the repeat kind, only a boolean
         {
             find: 'repeat:"off"!==',
-            replacement: {
-                match: /repeat:"off"!==(.{1,3}),/,
-                replace: "actual_repeat:$1,$&"
-            }
-        }
+            replacement: [
+                {
+                    // Discord doesn't give you shuffle state and the repeat kind, only a boolean
+                    match: /repeat:"off"!==(\i),/,
+                    replace: "shuffle:arguments[2]?.shuffle_state??false,actual_repeat:$1,$&"
+                },
+                {
+                    match: /(?<=artists.filter\(\i=>).{0,10}\i\.id\)&&/,
+                    replace: ""
+                }
+            ]
+        },
     ],
+
     start: () => toggleHoverControls(Settings.plugins.SpotifyControls.hoverControls),
-    renderPlayer: () => <Player />
+
+    PanelWrapper({ VencordOriginal, ...props }) {
+        return (
+            <>
+                <ErrorBoundary
+                    fallback={() => (
+                        <div className="vc-spotify-fallback">
+                            <p>Failed to render Spotify Modal :(</p>
+                            <p >Check the console for errors</p>
+                        </div>
+                    )}
+                >
+                    <Player />
+                </ErrorBoundary>
+
+                <VencordOriginal {...props} />
+            </>
+        );
+    }
 });

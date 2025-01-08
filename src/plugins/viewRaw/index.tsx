@@ -16,18 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { addButton, removeButton } from "@api/MessagePopover";
 import { definePluginSettings } from "@api/Settings";
 import { CodeBlock } from "@components/CodeBlock";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Flex } from "@components/Flex";
 import { Devs } from "@utils/constants";
+import { getIntlMessage } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { copyWithToast } from "@utils/misc";
 import { closeModal, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, ChannelStore, Forms, i18n, Menu, Text } from "@webpack/common";
+import { Button, ChannelStore, Forms, Menu, Text } from "@webpack/common";
 import { Message } from "discord-types/general";
 
 
@@ -55,6 +56,7 @@ function cleanMessage(msg: Message) {
     const cloneAny = clone as any;
     delete cloneAny.editHistory;
     delete cloneAny.deleted;
+    delete cloneAny.firstEditTimestamp;
     cloneAny.attachments?.forEach(a => delete a.deleted);
 
     return clone;
@@ -117,11 +119,11 @@ const settings = definePluginSettings({
     }
 });
 
-function MakeContextCallback(name: "Guild" | "User" | "Channel") {
-    const callback: NavContextMenuPatchCallback = (children, props) => () => {
+function MakeContextCallback(name: "Guild" | "User" | "Channel"): NavContextMenuPatchCallback {
+    return (children, props) => {
         const value = props[name.toLowerCase()];
         if (!value) return;
-        if (props.label === i18n.Messages.CHANNEL_ACTIONS_MENU_LABEL) return; // random shit like notification settings
+        if (props.label === getIntlMessage("CHANNEL_ACTIONS_MENU_LABEL")) return; // random shit like notification settings
 
         const lastChild = children.at(-1);
         if (lastChild?.key === "developer-actions") {
@@ -141,9 +143,7 @@ function MakeContextCallback(name: "Guild" | "User" | "Channel") {
             />
         );
     };
-    return callback;
 }
-
 
 export default definePlugin({
     name: "ViewRaw",
@@ -151,6 +151,13 @@ export default definePlugin({
     authors: [Devs.KingFish, Devs.Ven, Devs.rad, Devs.ImLvna],
     dependencies: ["MessagePopoverAPI"],
     settings,
+    contextMenus: {
+        "guild-context": MakeContextCallback("Guild"),
+        "channel-context": MakeContextCallback("Channel"),
+        "thread-context": MakeContextCallback("Channel"),
+        "gdm-context": MakeContextCallback("Channel"),
+        "user-context": MakeContextCallback("User")
+    },
 
     start() {
         addButton("ViewRaw", msg => {
@@ -187,16 +194,9 @@ export default definePlugin({
                 onContextMenu: handleContextMenu
             };
         });
-
-        addContextMenuPatch("guild-context", MakeContextCallback("Guild"));
-        addContextMenuPatch("channel-context", MakeContextCallback("Channel"));
-        addContextMenuPatch("user-context", MakeContextCallback("User"));
     },
 
     stop() {
-        removeButton("CopyRawMessage");
-        removeContextMenuPatch("guild-context", MakeContextCallback("Guild"));
-        removeContextMenuPatch("channel-context", MakeContextCallback("Channel"));
-        removeContextMenuPatch("user-context", MakeContextCallback("User"));
+        removeButton("ViewRaw");
     }
 });

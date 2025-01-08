@@ -18,10 +18,10 @@
 
 import "./spotifyStyles.css";
 
-import ErrorBoundary from "@components/ErrorBoundary";
+import { Settings } from "@api/Settings";
 import { Flex } from "@components/Flex";
 import { ImageIcon, LinkIcon, OpenExternalIcon } from "@components/Icons";
-import { debounce } from "@utils/debounce";
+import { debounce } from "@shared/debounce";
 import { openImageModal } from "@utils/discord";
 import { classes, copyWithToast } from "@utils/misc";
 import { ContextMenuApi, FluxDispatcher, Forms, Menu, React, useEffect, useState, useStateFromStores } from "@webpack/common";
@@ -131,7 +131,9 @@ function Controls() {
             >
                 <Shuffle />
             </Button>
-            <Button onClick={() => SpotifyStore.prev()}>
+            <Button onClick={() => {
+                Settings.plugins.SpotifyControls.previousButtonRestartsTrack && SpotifyStore.position > 3000 ? SpotifyStore.seek(0) : SpotifyStore.prev();
+            }}>
                 <SkipPrev />
             </Button>
             <Button onClick={() => SpotifyStore.setPlaying(!isPlaying)}>
@@ -166,7 +168,6 @@ function SeekBar() {
 
     const [position, setPosition] = useState(storePosition);
 
-    // eslint-disable-next-line consistent-return
     useEffect(() => {
         if (isPlaying && !isSettingPosition) {
             setPosition(SpotifyStore.position);
@@ -231,7 +232,7 @@ function AlbumContextMenu({ track }: { track: Track; }) {
                 id="view-cover"
                 label="View Album Cover"
                 // trolley
-                action={() => openImageModal(track.album.image.url)}
+                action={() => openImageModal(track.album.image)}
                 icon={ImageIcon}
             />
             <Menu.MenuControlItem
@@ -359,7 +360,7 @@ export function Player() {
     const [shouldHide, setShouldHide] = useState(false);
 
     // Hide player after 5 minutes of inactivity
-    // eslint-disable-next-line consistent-return
+
     React.useEffect(() => {
         setShouldHide(false);
         if (!isPlaying) {
@@ -371,18 +372,15 @@ export function Player() {
     if (!track || !device?.is_active || shouldHide)
         return null;
 
+    const exportTrackImageStyle = {
+        "--vc-spotify-track-image": `url(${track?.album?.image?.url || ""})`,
+    } as React.CSSProperties;
+
     return (
-        <ErrorBoundary fallback={() => (
-            <div className="vc-spotify-fallback">
-                <p>Failed to render Spotify Modal :(</p>
-                <p >Check the console for errors</p>
-            </div>
-        )}>
-            <div id={cl("player")}>
-                <Info track={track} />
-                <SeekBar />
-                <Controls />
-            </div>
-        </ErrorBoundary>
+        <div id={cl("player")} style={exportTrackImageStyle}>
+            <Info track={track} />
+            <SeekBar />
+            <Controls />
+        </div>
     );
 }

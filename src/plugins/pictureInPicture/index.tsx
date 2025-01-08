@@ -10,7 +10,7 @@ import { definePluginSettings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { React, Tooltip } from "@webpack/common";
+import { Tooltip } from "@webpack/common";
 
 const settings = definePluginSettings({
     loop: {
@@ -24,19 +24,19 @@ const settings = definePluginSettings({
 export default definePlugin({
     name: "PictureInPicture",
     description: "Adds picture in picture to videos (next to the Download button)",
-    authors: [Devs.Nobody],
+    authors: [Devs.Lumap],
     settings,
     patches: [
         {
-            find: ".nonMediaAttachment]",
+            find: ".removeMosaicItemHoverButton),",
             replacement: {
-                match: /\.nonMediaAttachment\]:!(\i).{0,10}children:\[(\S)/,
-                replace: "$&,$1&&$2&&$self.renderPiPButton(),"
-            },
-        },
+                match: /(\.nonMediaMosaicItem\]:.{0,40}children:)(\i.slice\(\i\))(?<=showDownload:(\i).+?isVisualMediaType:(\i).+?)/,
+                replace: (_, rest, origChildren, showDownload, isVisualMediaType) => `${rest}[${showDownload}&&${isVisualMediaType}&&$self.PictureInPictureButton(),...${origChildren}]`
+            }
+        }
     ],
 
-    renderPiPButton: ErrorBoundary.wrap(() => {
+    PictureInPictureButton: ErrorBoundary.wrap(() => {
         return (
             <Tooltip text="Toggle Picture in Picture">
                 {tooltipProps => (

@@ -5,12 +5,15 @@
  */
 
 import * as DataStore from "@api/DataStore";
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, Settings } from "@api/Settings";
+import { getUserSettingLazy } from "@api/UserSettings";
 import ErrorBoundary from "@components/ErrorBoundary";
+import { Flex } from "@components/Flex";
 import { Devs } from "@utils/constants";
-import definePlugin from "@utils/types";
+import { Margins } from "@utils/margins";
+import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
-import { StatusSettingsStores, Tooltip } from "webpack/common";
+import { Button, Forms, showToast, TextInput, Toasts, Tooltip, useEffect, useState } from "webpack/common";
 
 const enum ActivitiesTypes {
     Game,
@@ -23,7 +26,14 @@ interface IgnoredActivity {
     type: ActivitiesTypes;
 }
 
+const enum FilterMode {
+    Whitelist,
+    Blacklist
+}
+
 const RunningGameStore = findStoreLazy("RunningGameStore");
+
+const ShowCurrentGame = getUserSettingLazy("status", "showCurrentGame")!;
 
 function ToggleIcon(activity: IgnoredActivity, tooltipText: string, path: string, fill: string) {
     return (
@@ -65,11 +75,142 @@ function handleActivityToggle(e: React.MouseEvent<HTMLButtonElement, MouseEvent>
     if (ignoredActivityIndex === -1) settings.store.ignoredActivities = getIgnoredActivities().concat(activity);
     else settings.store.ignoredActivities = getIgnoredActivities().filter((_, index) => index !== ignoredActivityIndex);
 
-    // Trigger activities recalculation
-    StatusSettingsStores.ShowCurrentGame.updateSetting(old => old);
+    recalculateActivities();
 }
 
-const settings = definePluginSettings({}).withPrivateSettings<{
+function recalculateActivities() {
+    ShowCurrentGame.updateSetting(old => old);
+}
+
+function ImportCustomRPCComponent() {
+    return (
+        <Flex flexDirection="column">
+            <Forms.FormText type={Forms.FormText.Types.DESCRIPTION}>Import the application id of the CustomRPC plugin to the filter list</Forms.FormText>
+            <div>
+                <Button
+                    onClick={() => {
+                        const id = Settings.plugins.CustomRPC?.appID as string | undefined;
+                        if (!id) {
+                            return showToast("CustomRPC application ID is not set.", Toasts.Type.FAILURE);
+                        }
+
+                        const isAlreadyAdded = idsListPushID?.(id);
+                        if (isAlreadyAdded) {
+                            showToast("CustomRPC application ID is already added.", Toasts.Type.FAILURE);
+                        }
+                    }}
+                >
+                    Import CustomRPC ID
+                </Button>
+            </div>
+        </Flex>
+    );
+}
+
+let idsListPushID: ((id: string) => boolean) | null = null;
+
+function IdsListComponent(props: { setValue: (value: string) => void; }) {
+    const [idsList, setIdsList] = useState<string>(settings.store.idsList ?? "");
+
+    idsListPushID = (id: string) => {
+        const currentIds = new Set(idsList.split(",").map(id => id.trim()).filter(Boolean));
+
+        const isAlreadyAdded = currentIds.has(id) || (currentIds.add(id), false);
+
+        const ids = Array.from(currentIds).join(", ");
+        setIdsList(ids);
+        props.setValue(ids);
+
+        return isAlreadyAdded;
+    };
+
+    useEffect(() => () => {
+        idsListPushID = null;
+    }, []);
+
+    function handleChange(newValue: string) {
+        setIdsList(newValue);
+        props.setValue(newValue);
+    }
+
+    return (
+        <Forms.FormSection>
+            <Forms.FormTitle tag="h3">Filter List</Forms.FormTitle>
+            <Forms.FormText className={Margins.bottom8} type={Forms.FormText.Types.DESCRIPTION}>Comma separated list of activity IDs to filter (Useful for filtering specific RPC activities and CustomRPC</Forms.FormText>
+            <TextInput
+                type="text"
+                value={idsList}
+                onChange={handleChange}
+                placeholder="235834946571337729, 343383572805058560"
+            />
+        </Forms.FormSection>
+    );
+}
+
+const settings = definePluginSettings({
+    importCustomRPC: {
+        type: OptionType.COMPONENT,
+        description: "",
+        component: () => <ImportCustomRPCComponent />
+    },
+    listMode: {
+        type: OptionType.SELECT,
+        description: "Change the mode of the filter list",
+        options: [
+            {
+                label: "Whitelist",
+                value: FilterMode.Whitelist,
+                default: true
+            },
+            {
+                label: "Blacklist",
+                value: FilterMode.Blacklist,
+            }
+        ],
+        onChange: recalculateActivities
+    },
+    idsList: {
+        type: OptionType.COMPONENT,
+        description: "",
+        default: "",
+        onChange(newValue: string) {
+            const ids = new Set(newValue.split(",").map(id => id.trim()).filter(Boolean));
+            settings.store.idsList = Array.from(ids).join(", ");
+            recalculateActivities();
+        },
+        component: props => <IdsListComponent setValue={props.setValue} />
+    },
+    ignorePlaying: {
+        type: OptionType.BOOLEAN,
+        description: "Ignore all playing activities (These are usually game and RPC activities)",
+        default: false,
+        onChange: recalculateActivities
+    },
+    ignoreStreaming: {
+        type: OptionType.BOOLEAN,
+        description: "Ignore all streaming activities",
+        default: false,
+        onChange: recalculateActivities
+    },
+    ignoreListening: {
+        type: OptionType.BOOLEAN,
+        description: "Ignore all listening activities (These are usually spotify activities)",
+        default: false,
+        onChange: recalculateActivities
+    },
+    ignoreWatching: {
+        type: OptionType.BOOLEAN,
+        description: "Ignore all watching activities",
+        default: false,
+        onChange: recalculateActivities
+    },
+    ignoreCompeting: {
+        type: OptionType.BOOLEAN,
+        description: "Ignore all competing activities (These are normally special game activities)",
+        default: false,
+        onChange: recalculateActivities
+    }
+}).withPrivateSettings<{
     ignoredActivities: IgnoredActivity[];
 }>();
 
@@ -77,47 +218,78 @@ function getIgnoredActivities() {
     return settings.store.ignoredActivities ??= [];
 }
 
+function isActivityTypeIgnored(type: number, id?: string) {
+    if (id && settings.store.idsList.includes(id)) {
+        return settings.store.listMode === FilterMode.Blacklist;
+    }
+
+    switch (type) {
+        case 0: return settings.store.ignorePlaying;
+        case 1: return settings.store.ignoreStreaming;
+        case 2: return settings.store.ignoreListening;
+        case 3: return settings.store.ignoreWatching;
+        case 5: return settings.store.ignoreCompeting;
+    }
+
+    return false;
+}
+
 export default definePlugin({
     name: "IgnoreActivities",
-    authors: [Devs.Nuckyz],
-    description: "Ignore activities from showing up on your status ONLY. You can configure which ones are ignored from the Registered Games and Activities tabs.",
+    authors: [Devs.Nuckyz, Devs.Kylie],
+    description: "Ignore activities from showing up on your status ONLY. You can configure which ones are specifically ignored from the Registered Games and Activities tabs, or use the general settings below",
+    dependencies: ["UserSettingsAPI"],
 
     settings,
 
     patches: [
         {
-            find: '.displayName="LocalActivityStore"',
+            find: '"LocalActivityStore"',
             replacement: [
                 {
-                    match: /HANG_STATUS.+?(?=!\i\(\i,\i\)&&)(?<=(\i)\.push.+?)/,
+                    match: /HANG_STATUS.+?(?=!\i\(\)\(\i,\i\)&&)(?<=(\i)\.push.+?)/,
                     replace: (m, activities) => `${m}${activities}=${activities}.filter($self.isActivityNotIgnored);`
                 }
             ]
         },
         {
-            find: ".Messages.SETTINGS_GAMES_TOGGLE_OVERLAY",
+            find: '"ActivityTrackingStore"',
             replacement: {
-                match: /\.Messages\.SETTINGS_GAMES_TOGGLE_OVERLAY.+?}\(\),(?<={overlay:\i,.+?=(\i),.+?)(?=!(\i))/,
-                replace: (m, props, nowPlaying) => `${m}$self.renderToggleGameActivityButton(${props},${nowPlaying}),`
+                match: /getVisibleRunningGames\(\).+?;(?=for)(?<=(\i)=\i\.\i\.getVisibleRunningGames.+?)/,
+                replace: (m, runningGames) => `${m}${runningGames}=${runningGames}.filter(({id,name})=>$self.isActivityNotIgnored({type:0,application_id:id,name}));`
             }
         },
         {
+            find: "#{intl::SETTINGS_GAMES_TOGGLE_OVERLAY}",
+            replacement: {
+                match: /#{intl::SETTINGS_GAMES_TOGGLE_OVERLAY}.+?}\(\),(?<={overlay:\i,.+?=(\i),.+?)(?=!(\i))/,
+                replace: (m, props, nowPlaying) => `${m}$self.renderToggleGameActivityButton(${props},${nowPlaying}),`
+            }
+        },
+        // Discord has 2 different components for activities. Currently, the last is the one being used
+        {
             find: ".activityTitleText,variant",
             replacement: {
-                match: /(?<=\i\.activityTitleText.+?children:(\i)\.name.*?}\),)/,
-                replace: (_, props) => `$self.renderToggleActivityButton(${props}),`
+                match: /\.activityTitleText.+?children:(\i)\.name.*?}\),/,
+                replace: (m, props) => `${m}$self.renderToggleActivityButton(${props}),`
             },
         },
         {
-            find: ".activityCardDetails,children",
+            find: ".promotedLabelWrapperNonBanner,children",
             replacement: {
-                match: /(?<=\i\.activityCardDetails.+?children:(\i\.application)\.name.*?}\),)/,
-                replace: (_, props) => `$self.renderToggleActivityButton(${props}),`
+                match: /\.appDetailsHeaderContainer.+?children:\i.*?}\),(?<=application:(\i).+?)/,
+                replace: (m, props) => `${m}$self.renderToggleActivityButton(${props}),`
             }
         }
     ],
 
     async start() {
+        // Migrate allowedIds
+        if (Settings.plugins.IgnoreActivities.allowedIds) {
+            settings.store.idsList = Settings.plugins.IgnoreActivities.allowedIds;
+            delete Settings.plugins.IgnoreActivities.allowedIds; // Remove allowedIds
+        }
+
         const oldIgnoredActivitiesData = await DataStore.get<Map<IgnoredActivity["id"], IgnoredActivity>>("IgnoreActivities_ignoredActivities");
 
         if (oldIgnoredActivitiesData != null) {
@@ -141,13 +313,17 @@ export default definePlugin({
     },
 
     isActivityNotIgnored(props: { type: number; application_id?: string; name?: string; }) {
-        if (props.type === 0 || props.type === 3) {
-            if (props.application_id != null) return !getIgnoredActivities().some(activity => activity.id === props.application_id);
-            else {
-                const exePath = RunningGameStore.getRunningGames().find(game => game.name === props.name)?.exePath;
-                if (exePath) return !getIgnoredActivities().some(activity => activity.id === exePath);
+        if (isActivityTypeIgnored(props.type, props.application_id)) return false;
+
+        if (props.application_id != null) {
+            return !getIgnoredActivities().some(activity => activity.id === props.application_id) || (settings.store.listMode === FilterMode.Whitelist && settings.store.idsList.includes(props.application_id));
+        } else {
+            const exePath = RunningGameStore.getRunningGames().find(game => game.name === props.name)?.exePath;
+            if (exePath) {
+                return !getIgnoredActivities().some(activity => activity.id === exePath);
             }
         }
+
         return true;
     },
 

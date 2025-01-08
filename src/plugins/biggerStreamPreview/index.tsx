@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { addContextMenuPatch, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
+import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { ScreenshareIcon } from "@components/Icons";
 import { Devs } from "@utils/constants";
 import { openImageModal } from "@utils/discord";
@@ -57,10 +57,14 @@ export const handleViewPreview = async ({ guildId, channelId, ownerId }: Applica
     const previewUrl = await ApplicationStreamPreviewStore.getPreviewURL(guildId, channelId, ownerId);
     if (!previewUrl) return;
 
-    openImageModal(previewUrl);
+    openImageModal({
+        url: previewUrl,
+        height: 720,
+        width: 1280
+    });
 };
 
-export const addViewStreamContext: NavContextMenuPatchCallback = (children, { userId }: { userId: string | bigint; }) => () => {
+export const addViewStreamContext: NavContextMenuPatchCallback = (children, { userId }: { userId: string | bigint; }) => {
     const stream = ApplicationStreamingStore.getAnyStreamForUser(userId);
     if (!stream) return;
 
@@ -89,12 +93,8 @@ export default definePlugin({
     name: "BiggerStreamPreview",
     description: "This plugin allows you to enlarge stream previews",
     authors: [Devs.phil],
-    start: () => {
-        addContextMenuPatch("user-context", userContextPatch);
-        addContextMenuPatch("stream-context", streamContextPatch);
-    },
-    stop: () => {
-        removeContextMenuPatch("user-context", userContextPatch);
-        removeContextMenuPatch("stream-context", streamContextPatch);
+    contextMenus: {
+        "user-context": userContextPatch,
+        "stream-context": streamContextPatch
     }
 });
