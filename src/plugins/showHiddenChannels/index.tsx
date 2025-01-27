@@ -108,8 +108,8 @@ export default definePlugin({
                 },
                 {
                     // Prevent Discord from trying to connect to hidden voice channels
-                    match: /(?=&&\i\.\i\.selectVoiceChannel\((\i)\.id\))/,
-                    replace: (_, channel) => `&&!$self.isHiddenChannel(${channel})`
+                    match: /(?=||\i\.\i\.selectVoiceChannel\((\i)\.id\))/,
+                    replace: (_, channel) => `$self.isHiddenChannel(${channel})||`
                 },
                 {
                     // Make Discord show inside the channel if clicking on a hidden or locked channel
