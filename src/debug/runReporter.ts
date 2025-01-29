@@ -80,10 +80,8 @@ async function runReporter() {
                 } else {
                     logMessage += `(${args.map(arg => `"${arg}"`).join(", ")})`;
                 }
-
                 if (IS_COMPANION_TEST)
                     reporterData.failedWebpack[method].push(args.map(a => String(a)));
-
                 ReporterLogger.log("Webpack Find Fail:", logMessage);
             }
         }
