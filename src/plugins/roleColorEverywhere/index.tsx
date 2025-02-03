@@ -95,7 +95,7 @@ export default definePlugin({
             find: ".userTooltip,children",
             replacement: [
                 {
-                    match: /let\{id:(\i),guildId:\i,channelId:(\i)[^}]*\}.*?\.\i,{(?=children)/,
+                    match: /let\{id:(\i),guildId:\i,channelId:(\i)[^}]*\}.*?\i\.\i,\{(?:.*?,?)(?=children)/,
                     replace: "$&color:$self.getColorInt($1,$2),"
                 }
             ],

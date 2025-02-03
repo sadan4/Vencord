@@ -198,8 +198,19 @@ export default definePlugin({
                 match: /unknownUserMentionPlaceholder:/,
                 replace: "$&false&&"
             }
+        },
+        {
+            find: ":\"text\":",
+            replacement: {
+                match: /let\{id:(\i),guildId:\i,channelId:(\i)[^}]*\}.*?\i\.\i,\{(?:.*?,?)(?=children)/,
+                replace: "$&onMouseEnter:$self.onChatboxHover,"
+            }
         }
     ],
+
+    onChatboxHover() {
+
+    },
 
     renderMention(RoleMention, UserMention, data, parse, props) {
         return (
