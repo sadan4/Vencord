@@ -9,7 +9,6 @@ import { React } from "@webpack/common";
 import type { ComponentType, HTMLProps, PropsWithChildren } from "react";
 
 import { AvatarDecoration } from "../..";
-
 type DecorationGridItemComponent = ComponentType<PropsWithChildren<HTMLProps<HTMLDivElement>> & {
     onSelect: () => void,
     isSelected: boolean,
