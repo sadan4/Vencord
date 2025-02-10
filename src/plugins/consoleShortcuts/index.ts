@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import { SYM_GET_RAW_TARGET, SYM_IS_PROXY } from "@shared/SettingsStore";
 import { Devs } from "@utils/constants";
 import { getCurrentChannel, getCurrentGuild } from "@utils/discord";
 import { runtimeHashMessageKey } from "@utils/intlHash";
@@ -29,6 +30,7 @@ import { extract, filters, findAll, findModuleId, search } from "@webpack";
 import * as Common from "@webpack/common";
 import { loadLazyChunks } from "debug/loadLazyChunks";
 import type { ComponentType } from "react";
+import { SYM_ORIGINAL_FACTORY, SYM_PATCHED_BY, SYM_PATCHED_SOURCE } from "webpack/patchWebpack";
 
 const DESKTOP_ONLY = (f: string) => () => {
     throw new Error(`'${f}' is Discord Desktop only.`);
@@ -159,7 +161,15 @@ function makeShortcuts() {
                     .map(store => [store.getName(), store] as const)
                     .filter(([name]) => name.length > 1)
             )
-        }
+        },
+
+        SYM_LAZY_CACHED,
+        SYM_LAZY_GET,
+        SYM_GET_RAW_TARGET,
+        SYM_IS_PROXY,
+        SYM_ORIGINAL_FACTORY,
+        SYM_PATCHED_BY,
+        SYM_PATCHED_SOURCE,
     };
 }
 
