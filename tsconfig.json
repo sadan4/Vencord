@@ -53,6 +53,9 @@
             "debug/*": [
                 "./src/debug/*"
             ],
+            "webpack/patchWebpack": [
+                "./src/webpack/patchWebpack"
+            ]
         },
         "plugins": [
             // Transform paths in output .d.ts files (Include this line if you output declarations files)
