@@ -21,9 +21,19 @@ import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
 import { ChannelStore, Constants, FluxDispatcher, GuildStore, RelationshipStore, SnowflakeUtils, UserStore } from "@webpack/common";
-import { Settings } from "Vencord";
 
 const UserAffinitiesStore = findStoreLazy("UserAffinitiesStore");
+
+const settings = definePluginSettings(
+    {
+        sortByAffinity: {
+            type: OptionType.BOOLEAN,
+            default: true,
+            description: "Whether to sort implicit relationships by their affinity to you.",
+            restartNeeded: true
+        },
+    }
+);
 
 export default definePlugin({
     name: "ImplicitRelationships",
@@ -75,7 +85,7 @@ export default definePlugin({
         {
             find: "getRelationshipCounts(){",
             replacement: {
-                predicate: () => Settings.plugins.ImplicitRelationships.sortByAffinity,
+                predicate: () => settings.store.sortByAffinity,
                 match: /\}\)\.sortBy\((.+?)\)\.value\(\)/,
                 replace: "}).sortBy(row => $self.wrapSort(($1), row)).value()"
             }
@@ -104,16 +114,8 @@ export default definePlugin({
             },
         }
     ],
-    settings: definePluginSettings(
-        {
-            sortByAffinity: {
-                type: OptionType.BOOLEAN,
-                default: true,
-                description: "Whether to sort implicit relationships by their affinity to you.",
-                restartNeeded: true
-            },
-        }
-    ),
+
+    settings,
 
     wrapSort(comparator: Function, row: any) {
         return row.type === 5

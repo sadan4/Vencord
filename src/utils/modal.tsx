@@ -19,7 +19,7 @@
 import { filters, findModuleId, mapMangledModuleLazy, proxyLazyWebpack, wreq } from "@webpack";
 import type { ComponentType, PropsWithChildren, ReactNode, Ref } from "react";
 
-import { LazyComponent } from "./react";
+import { LazyComponent } from "./lazyReact";
 
 export const enum ModalSize {
     SMALL = "small",

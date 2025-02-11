@@ -21,8 +21,6 @@ import { ActionDispatch } from "react";
 
 import { checkIntersecting } from "./misc";
 
-export * from "./lazyReact";
-
 export const NoopComponent = () => null;
 
 /**

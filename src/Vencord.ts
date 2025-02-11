@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+console.log("here");
+
 export * as Api from "./api";
 export * as Components from "./components";
 export * as Plugins from "./plugins";

@@ -24,9 +24,7 @@ import { mergeDefaults } from "@utils/mergeDefaults";
 import { putCloudSettings } from "@utils/settingsSync";
 import { DefinedSettings, OptionType, SettingsChecks, SettingsDefinition } from "@utils/types";
 import { React, useEffect } from "@webpack/common";
-
-import plugins from "~plugins";
-
+import { Plugins } from "Vencord";
 const logger = new Logger("Settings");
 export interface Settings {
     autoUpdate: boolean;
@@ -127,19 +125,19 @@ export const SettingsStore = new SettingsStoreClass(settings, {
         path
     }) {
         const v = target[key];
-        if (!plugins) return v; // plugins not initialised yet. this means this path was reached by being called on the top level
+        if (!Plugins.plugins) return v; // plugins not initialised yet. this means this path was reached by being called on the top level
 
-        if (path === "plugins" && key in plugins)
+        if (path === "plugins" && key in Plugins.plugins)
             return target[key] = {
-                enabled: IS_REPORTER || plugins[key].required || plugins[key].enabledByDefault || false
+                enabled: IS_REPORTER || Plugins.plugins[key].required || Plugins.plugins[key].enabledByDefault || false
             };
 
         // Since the property is not set, check if this is a plugin's setting and if so, try to resolve
         // the default value.
         if (path.startsWith("plugins.")) {
             const plugin = path.slice("plugins.".length);
-            if (plugin in plugins) {
-                const setting = plugins[plugin].options?.[key];
+            if (plugin in Plugins.plugins) {
+                const setting = Plugins.plugins[plugin].options?.[key];
                 if (!setting) return v;
 
                 if ("default" in setting)

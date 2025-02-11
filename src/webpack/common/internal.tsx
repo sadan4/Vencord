@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { LazyComponent } from "@utils/react";
+import { LazyComponent } from "@utils/lazyReact";
 
 // eslint-disable-next-line path-alias/no-relative
 import { FilterFn, filters, lazyWebpackSearchHistory, waitFor } from "../webpack";

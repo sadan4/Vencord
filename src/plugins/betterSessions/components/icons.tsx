@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { LazyComponent } from "@utils/react";
+import { LazyComponent } from "@utils/lazyReact";
 import { findByCode } from "@webpack";
 import { SVGProps } from "react";
 

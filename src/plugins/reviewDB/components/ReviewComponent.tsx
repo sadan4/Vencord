@@ -17,8 +17,8 @@
 */
 
 import { openUserProfile } from "@utils/discord";
+import { LazyComponent } from "@utils/lazyReact";
 import { classes } from "@utils/misc";
-import { LazyComponent } from "@utils/react";
 import { filters, findBulk } from "@webpack";
 import { Alerts, Parser, Timestamp, useState } from "@webpack/common";
 

@@ -1,21 +1,19 @@
 import path, { join, resolve, extname, dirname, relative } from 'path';
-import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, RspackPluginInstance, WebpackPluginInstance } from "@rspack/core";
+import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, ProvidePlugin, RspackPluginInstance, SwcJsMinimizerRspackPlugin } from "@rspack/core";
 import "webpack-dev-server";
-import { TransformOptions } from "esbuild";
-import { parse } from "jsonc-parser";
 import { readFile } from "fs/promises";
-import { TsConfigJson } from "type-fest";
-import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
-import { Options } from "tsconfig-paths-webpack-plugin/lib/options";
 import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writeFileSync, Dirent } from "fs-extra";
 import crypto from "crypto";
 import { exec, execSync } from "child_process";
 import { promisify } from "util";
-import { createRequire } from "module";
 import { ManagedCssPlugin } from "./managed-css";
 import { defineConfig } from "@rspack/cli";
-
-
+import { Config } from "@swc/types";
+import { RsdoctorRspackMultiplePlugin } from "@rsdoctor/rspack-plugin";
+import { EsbuildPlugin } from "esbuild-loader";
+import { Target } from "puppeteer-core";
+import { TransformOptions } from "esbuild";
+import CircularDepPlugin from "circular-dependency-plugin";
 interface ENV {
     IS_WEB: boolean;
     IS_EXTENSION: boolean;
@@ -246,8 +244,9 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
         entry: './src/Vencord.ts',
         mode: IS_DEV ? 'development' : 'production',
         output: {
-            path: path.resolve(__dirname, 'dist2'),
+            path: path.resolve(__dirname, 'dist'),
             filename: `${getRendererFileName(env)}.js`,
+            library: "Vencord"
         },
         plugins: [
             // Learn more about plugins from https://webpack.js.org/configuration/plugins/
@@ -262,21 +261,27 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
             }),
             new FileResolverPlugin(),
             new ManagedCssPlugin(),
-            new DefinePlugin({
-                IS_WEB,
-                IS_EXTENSION,
-                IS_STANDALONE,
-                IS_UPDATER_DISABLED,
-                IS_DEV,
-                IS_REPORTER,
-                IS_DISCORD_DESKTOP,
-                IS_VESKTOP,
-                VERSION: JSON.stringify(VERSION),
-                BUILD_TIMESTAMP,
-                ...(IS_WEB || IS_STANDALONE ? {} : {
-                    ["process.platform"]: PROCESS_PLATFORM,
-                })
-            })
+            // new RsdoctorRspackMultiplePlugin({
+            //     supports: {
+            //         generateTileGraph: true
+            //     },
+            // }),
+            new ProvidePlugin({
+                VencordCreateElement: resolve(__dirname, join("scripts", "build", "inject", "create.mjs")),
+                VencordFragment: resolve(__dirname, join("scripts", "build", "inject", "fragment.mjs")),
+            }),
+            // new CircularDepPlugin({
+            //     // exclude detection of files based on a RegExp
+            //     exclude: /never.never/,
+            //     // include specific files based on a RegExp
+            //     include: /src|node_modules/,
+            //     // add errors to webpack instead of warnings
+            //     // allow import cycles that include an asyncronous import,
+            //     // e.g. via import(/* webpackMode: "weak" */ './file.js')
+            //     allowAsyncCycles: false,
+            //     // set the current working directory for displaying module paths
+            //     cwd: process.cwd(),
+            // })
         ],
         resolve: {
             extensions: ['.tsx', '.ts', '.jsx', '.js', '...'],
@@ -284,16 +289,98 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                 configFile: resolve(__dirname, "tsconfig.json"),
             },
         },
+        target: ["web", "es2022"],
+        optimization: {
+            moduleIds: IS_DEV ? undefined : "natural",
+            splitChunks: false,
+            minimizer: [
+                new EsbuildPlugin({
+                    target: "esnext",
+                    define: Object.fromEntries(Object.entries({
+                        IS_WEB,
+                        IS_EXTENSION,
+                        IS_STANDALONE,
+                        IS_UPDATER_DISABLED,
+                        IS_DEV,
+                        IS_REPORTER,
+                        IS_DISCORD_DESKTOP,
+                        IS_VESKTOP,
+                        VERSION: JSON.stringify(VERSION),
+                        BUILD_TIMESTAMP,
+                        ...(IS_WEB || IS_STANDALONE ? {} : {
+                            ["process.platform"]: PROCESS_PLATFORM,
+                        })
+                    }).map(([k, v]) => [k, String(v)])),
+                    minify: true,
+                    treeShaking: true,
+                }),
+            ]
+        },
         module: {
             rules: [
                 {
                     test: /\.tsx?$/i,
                     loader: 'esbuild-loader',
-                    exclude: ['/node_modules/'],
                     options: {
-                        target: ["esnext"]
+                        target: "esnext",
+                        jsx: "transform",
+                        jsxFactory: "VencordCreateElement.default",
+                        jsxFragment: "VencordFragment.default",
+                        define: Object.fromEntries(Object.entries({
+                            IS_WEB,
+                            IS_EXTENSION,
+                            IS_STANDALONE,
+                            IS_UPDATER_DISABLED,
+                            IS_DEV,
+                            IS_REPORTER,
+                            IS_DISCORD_DESKTOP,
+                            IS_VESKTOP,
+                            VERSION: JSON.stringify(VERSION),
+                            BUILD_TIMESTAMP,
+                            ...(IS_WEB || IS_STANDALONE ? {} : {
+                                ["process.platform"]: PROCESS_PLATFORM,
+                            })
+                        }).map(([k, v]) => [k, String(v)])),
+                        treeShaking: true,
                     } satisfies TransformOptions
                 },
+                /* {
+                    test: /\.tsx?$/i,
+                    loader: 'builtin:swc-loader',
+                    exclude: ['/node_modules/'],
+                    options: {
+                        jsc: {
+                            transform: {
+                                react: {
+                                    runtime: "classic",
+                                    pragma: "VencordCreateElement",
+                                    pragmaFrag: "VencordFragment",
+                                    importSource: "scripts/build/inject/react"
+                                },
+                                optimizer: {
+                                    simplify: true,
+                                    globals: {
+                                        vars: Object.fromEntries(Object.entries({
+                                            IS_WEB,
+                                            IS_EXTENSION,
+                                            IS_STANDALONE,
+                                            IS_UPDATER_DISABLED,
+                                            IS_DEV,
+                                            IS_REPORTER,
+                                            IS_DISCORD_DESKTOP,
+                                            IS_VESKTOP,
+                                            VERSION: JSON.stringify(VERSION),
+                                            BUILD_TIMESTAMP,
+                                            ...(IS_WEB || IS_STANDALONE ? {} : {
+                                                ["process.platform"]: PROCESS_PLATFORM,
+                                            })
+                                        }).map(([k, v]) => [k, String(v)])),
+                                    }
+                                }
+                            }
+                        }
+                    } satisfies Config
+                } */,
                 {
                     test: /\.css$/i,
                     use: [CssExtractRspackPlugin.loader, {

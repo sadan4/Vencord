@@ -19,8 +19,6 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { ComponentType, HTMLProps } from "react";
 
-import Plugins from "~plugins";
-
 export const enum BadgePosition {
     START,
     END
@@ -90,7 +88,7 @@ export function _getBadges(args: BadgeUserArgs) {
                 : badges.push(...b);
         }
     }
-    const donorBadges = (Plugins.BadgeAPI as unknown as typeof import("../plugins/_api/badges").default).getDonorBadges(args.userId);
+    const donorBadges = (Vencord.Plugins.plugins.BadgeAPI as unknown as typeof import("../plugins/_api/badges").default).getDonorBadges(args.userId);
     if (donorBadges) badges.unshift(...donorBadges);
 
     return badges;

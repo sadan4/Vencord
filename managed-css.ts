@@ -34,7 +34,15 @@ export class ManagedCssPlugin implements RspackPluginInstance {
         (lRes.extensions ??= []).push(".ts");
         compiler.options.module.rules.push({
             resource: PLUGIN_NAME,
-            use: "managed-css"
+            use: [
+                // {
+                //     loader: "builtin:lightningcss-loader",
+                //     options: {
+                //         minify: true
+                //     }
+                // },
+                "managed-css"
+            ]
         });
     }
 }
