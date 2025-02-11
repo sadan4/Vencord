@@ -24,7 +24,6 @@ export * as QuickCss from "./utils/quickCss";
 export * as Updater from "./utils/updater";
 export * as Webpack from "./webpack";
 export * as WebpackPatcher from "./webpack/patchWebpack";
-export { PlainSettings, Settings };
 
 import "./utils/quickCss";
 import "./webpack/patchWebpack";
@@ -42,6 +41,7 @@ import { getCloudSettings, putCloudSettings } from "./utils/settingsSync";
 import { checkForUpdates, update, UpdateLogger } from "./utils/updater";
 import { onceReady } from "./webpack";
 import { SettingsRouter } from "./webpack/common";
+export { PlainSettings, Settings };
 
 if (IS_REPORTER) {
     require("./debug/runReporter");

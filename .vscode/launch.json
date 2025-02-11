@@ -9,15 +9,21 @@
     // Now launch the desired configuration in VSCode and start Discord with the flags.
     // For example, to debug both process, run Electron: All then launch Discord with
     // discord --remote-debugging-port=9223 --inspect
-
     "version": "0.2.0",
     "configurations": [
+        {
+            "type": "node-terminal",
+            "name": "JSDebug",
+            "request": "launch",
+            "command": "kitty",
+            "internalConsoleOptions": "neverOpen",
+        },
         {
             "name": "Electron: Main",
             "type": "node",
             "request": "attach",
             "port": 9229,
-            "timeout": 30000
+            "timeout": 30000,
         },
         {
             "name": "Electron: Renderer",
@@ -31,7 +37,10 @@
     "compounds": [
         {
             "name": "Electron: All",
-            "configurations": ["Electron: Main", "Electron: Renderer"]
+            "configurations": [
+                "Electron: Main",
+                "Electron: Renderer"
+            ]
         }
     ]
 }

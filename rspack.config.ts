@@ -1,5 +1,5 @@
 import path, { join, resolve, extname, dirname, relative } from 'path';
-import { Compiler, Configuration, CssExtractRspackPlugin, RspackPluginInstance, WebpackPluginInstance } from "@rspack/core";
+import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, RspackPluginInstance, WebpackPluginInstance } from "@rspack/core";
 import "webpack-dev-server";
 import { TransformOptions } from "esbuild";
 import { parse } from "jsonc-parser";
@@ -11,11 +11,25 @@ import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writ
 import crypto from "crypto";
 import { exec, execSync } from "child_process";
 import { promisify } from "util";
+import { createRequire } from "module";
+import { ManagedCssPlugin } from "./managed-css";
+import { defineConfig } from "@rspack/cli";
 
 
 interface ENV {
+    IS_WEB: boolean;
+    IS_EXTENSION: boolean;
+    IS_DISCORD_DESKTOP: boolean;
+    IS_VESKTOP: boolean;
     IS_DEV: boolean;
     IS_REPORTER: boolean;
+    IS_STANDALONE: boolean;
+    IS_UPDATER_DISABLED: boolean;
+    VERSION: string;
+    BUILD_TIMESTAMP: number;
+    GIT_HASH: string;
+    PROCESS_PLATFORM: string;
+    IS_USERSCRIPT: boolean;
 }
 
 export class RspackVirtualModulePlugin implements RspackPluginInstance {
@@ -181,34 +195,94 @@ export async function globPlugins(kind: "web" | "discordDesktop" | "vencordDeskt
     code += `export default {${pluginsCode}};export const PluginMeta={${metaCode}};export const ExcludedPlugins={${excludedCode}};`;
     return code;
 }
+const nop = () => { };
+class FileResolverPlugin implements RspackPluginInstance {
+    PLUGIN_NAME = "FileUriResolverPlugin";
+    apply(compiler: Compiler) {
+        compiler.hooks.normalModuleFactory.tap(this.PLUGIN_NAME, (nmf) => {
+            nmf.hooks.resolve.tap(this.PLUGIN_NAME, (data) => {
+                if (data.request.startsWith("file://") && URL.canParse(data.request)) {
+                    const url = new URL(data.request.replace("file://", "file://a/"));
+                    const path = url.pathname.replace(/^\//, "");
+                    // FIXME: excape with RegExp.escape
+                    const ending = data.request.replace(new RegExp(`^file://.*${path}`), "");
+                    const fullpath = join(data.context, path);
+                    data.request = `${this.PLUGIN_NAME}!=!${fullpath}${ending}`;
+                }
+            });
+        });
+        compiler.options.module.rules.push(
+            {
+                resource: this.PLUGIN_NAME,
+                type: "asset/source",
+            }
+        );
+    };
+}
+function getRendererFileName({ IS_VESKTOP, IS_DISCORD_DESKTOP, IS_EXTENSION, IS_USERSCRIPT, IS_WEB }: ENV) {
+    if (IS_VESKTOP) return 'vencordDesktopRenderer';
+    if (IS_DISCORD_DESKTOP) return "renderer";
+    if (IS_EXTENSION) return "extension";
+    if (IS_USERSCRIPT) return "Vencord.user";
+    if (IS_WEB) return "browser";
+    throw new Error("Unknown target");
+}
 async function makeRendererConfig(env: ENV): Promise<Configuration> {
-    const { IS_DEV } = env;
+    const {
+        IS_DEV,
+        GIT_HASH,
+        IS_VESKTOP,
+        IS_DISCORD_DESKTOP,
+        IS_EXTENSION,
+        IS_WEB,
+        IS_REPORTER,
+        IS_UPDATER_DISABLED,
+        IS_STANDALONE,
+        VERSION,
+        BUILD_TIMESTAMP,
+        PROCESS_PLATFORM
+    } = env;
     return {
         entry: './src/Vencord.ts',
         mode: IS_DEV ? 'development' : 'production',
         output: {
             path: path.resolve(__dirname, 'dist2'),
-        },
-        devServer: {
-            open: true,
-            host: 'localhost',
+            filename: `${getRendererFileName(env)}.js`,
         },
         plugins: [
             // Learn more about plugins from https://webpack.js.org/configuration/plugins/
             // new GitHashPlugin,
             new RspackVirtualModulePlugin({
-                '~git-hash': `export default "${gitHash}"`,
+                '~git-hash': `export default "${GIT_HASH}"`,
                 '~plugins': await globPlugins("vencordDesktop", env),
                 '~git-remote': await gitRemotePlugin(),
             }),
-            new CssExtractRspackPlugin(),
+            new CssExtractRspackPlugin({
+                filename: `${getRendererFileName(env)}.css`,
+            }),
+            new FileResolverPlugin(),
+            new ManagedCssPlugin(),
+            new DefinePlugin({
+                IS_WEB,
+                IS_EXTENSION,
+                IS_STANDALONE,
+                IS_UPDATER_DISABLED,
+                IS_DEV,
+                IS_REPORTER,
+                IS_DISCORD_DESKTOP,
+                IS_VESKTOP,
+                VERSION: JSON.stringify(VERSION),
+                BUILD_TIMESTAMP,
+                ...(IS_WEB || IS_STANDALONE ? {} : {
+                    ["process.platform"]: PROCESS_PLATFORM,
+                })
+            })
         ],
         resolve: {
             extensions: ['.tsx', '.ts', '.jsx', '.js', '...'],
             tsConfig: {
                 configFile: resolve(__dirname, "tsconfig.json"),
-            }
-
+            },
         },
         module: {
             rules: [
@@ -219,17 +293,6 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                     options: {
                         target: ["esnext"]
                     } satisfies TransformOptions
-                },
-                {
-                    test: /\.css/i,
-                    use: [{
-                        loader: "builtin:lightningcss-loader",
-                        options: {
-                            minify: true,
-                        }
-                    },
-                        "raw-loader"],
-                    resourceQuery: /managed/
                 },
                 {
                     test: /\.css$/i,
@@ -245,10 +308,48 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
         },
     };
 }
-export default async (): Promise<Configuration[]> => {
+function getGlobPluginTarget({ IS_WEB, IS_VESKTOP, IS_DISCORD_DESKTOP }: ENV) {
+    if (IS_WEB) return "web";
+    if (IS_DISCORD_DESKTOP) return "discordDesktop";
+    if (IS_VESKTOP) return "vencordDesktop";
+    throw new Error("Unknown target");
+}
+export default defineConfig(async (args, { watch }): Promise<Configuration[] | Configuration> => {
+    defineConfig;
+    const PackageJson = JSON.parse(await readFile(resolve(__dirname, "package.json"), "utf-8"));
+
+    function isSet(prop: string): boolean {
+        return (prop in args) && String(args[prop]) == 'true';
+    }
+
+    function getOr(prop: string, or: string): string {
+        return (prop in args) ? String(args[prop]) : or;
+    }
+
+    const GIT_HASH = process.env.VENCORD_HASH || execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
     const env = {
-        IS_DEV: true,
-        IS_REPORTER: false,
+        IS_DEV: watch || isSet("dev"),
+        IS_REPORTER: isSet("reporter"),
+        IS_STANDALONE: isSet("standalone"),
+        IS_UPDATER_DISABLED: isSet("disable-updater"),
+        VERSION: PackageJson.version,
+        GIT_HASH,
+        PROCESS_PLATFORM: JSON.stringify(process.platform),
+        IS_DISCORD_DESKTOP: false,
+        IS_EXTENSION: false,
+        IS_VESKTOP: false,
+        IS_WEB: false,
+        IS_USERSCRIPT: false,
+        BUILD_TIMESTAMP: Math.floor(Number(process.env.SOURCE_DATE_EPOCH) || Date.now()),
     } satisfies ENV;
-    return Promise.all([makeRendererConfig(env)]);
-};
+    return Promise.all([
+        makeRendererConfig({
+            ...env,
+            IS_VESKTOP: true,
+        }),
+        makeRendererConfig({
+            ...env,
+            IS_DISCORD_DESKTOP: true
+        })
+    ]);
+});

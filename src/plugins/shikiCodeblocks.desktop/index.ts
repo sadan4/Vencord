@@ -21,7 +21,7 @@ import "./shiki.css";
 import { enableStyle } from "@api/Styles";
 import { Devs } from "@utils/constants";
 import definePlugin, { ReporterTestable } from "@utils/types";
-import previewExampleText from "raw-loader!./previewExample.tsx";
+import previewExampleText from "file://previewExample.tsx";
 
 import { shiki } from "./api/shiki";
 import { createHighlighter } from "./components/Highlighter";
