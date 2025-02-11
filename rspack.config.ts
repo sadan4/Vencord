@@ -1,8 +1,8 @@
 import path, { join, resolve, extname, dirname, relative } from 'path';
-import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, ProvidePlugin, RspackPluginInstance, SwcJsMinimizerRspackPlugin } from "@rspack/core";
+import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, HotModuleReplacementPlugin, ProvidePlugin, RspackOptions, RspackPluginInstance, SwcJsMinimizerRspackPlugin } from "@rspack/core";
 import "webpack-dev-server";
 import { readFile } from "fs/promises";
-import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writeFileSync, Dirent } from "fs-extra";
+import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writeFileSync, Dirent, stat, rm } from "fs-extra";
 import crypto from "crypto";
 import { exec, execSync } from "child_process";
 import { promisify } from "util";
@@ -28,6 +28,7 @@ interface ENV {
     GIT_HASH: string;
     PROCESS_PLATFORM: string;
     IS_USERSCRIPT: boolean;
+    RSPACK_SERVE: boolean | undefined;
 }
 
 export class RspackVirtualModulePlugin implements RspackPluginInstance {
@@ -238,15 +239,21 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
         IS_STANDALONE,
         VERSION,
         BUILD_TIMESTAMP,
-        PROCESS_PLATFORM
+        PROCESS_PLATFORM,
+        RSPACK_SERVE
     } = env;
+    const filename = `${RSPACK_SERVE ? "Server_" : ""}${getRendererFileName(env)}.js`;
     return {
         entry: './src/Vencord.ts',
         mode: IS_DEV ? 'development' : 'production',
         output: {
-            path: path.resolve(__dirname, 'dist'),
-            filename: `${getRendererFileName(env)}.js`,
-            library: "Vencord"
+            path: resolve(__dirname, 'dist'),
+            library: "Vencord",
+            filename,
+            publicPath: "/asdasd/asd",
+            // ...(RSPACK_SERVE ? {
+            //     publicPath: "asdasd"
+            // } : {})
         },
         plugins: [
             // Learn more about plugins from https://webpack.js.org/configuration/plugins/
@@ -290,6 +297,25 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
             },
         },
         target: ["web", "es2022"],
+        devServer: {
+            hot: true,
+            port: 8080,
+            host: "localhost",
+            webSocketServer: "ws",
+            devMiddleware: {
+                writeToDisk: true,
+                publicPath: "asdasd"
+            },
+            static: {
+                publicPath: "asdasd",
+            },
+            proxy: [(req, res) => {
+                console.log(req);
+                console.log(res);
+                return {};
+            }],
+            compress: true
+        },
         optimization: {
             moduleIds: IS_DEV ? undefined : "natural",
             splitChunks: false,
@@ -401,8 +427,16 @@ function getGlobPluginTarget({ IS_WEB, IS_VESKTOP, IS_DISCORD_DESKTOP }: ENV) {
     if (IS_VESKTOP) return "vencordDesktop";
     throw new Error("Unknown target");
 }
-export default defineConfig(async (args, { watch }): Promise<Configuration[] | Configuration> => {
-    defineConfig;
+function makeRendererStub(env: ENV): RspackOptions {
+    return {
+        entry: resolve(__dirname, join("scripts", env.IS_VESKTOP ? "vesktopStub.js" : "desktopStub.js")),
+        output: {
+            path: resolve(__dirname, "dist"),
+            filename: `${getRendererFileName(env)}.js`
+        },
+    };
+}
+export default defineConfig(async function (args, { watch, env: { RSPACK_SERVE } }): Promise<Configuration[] | Configuration> {
     const PackageJson = JSON.parse(await readFile(resolve(__dirname, "package.json"), "utf-8"));
 
     function isSet(prop: string): boolean {
@@ -415,7 +449,7 @@ export default defineConfig(async (args, { watch }): Promise<Configuration[] | C
 
     const GIT_HASH = process.env.VENCORD_HASH || execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
     const env = {
-        IS_DEV: watch || isSet("dev"),
+        IS_DEV: RSPACK_SERVE || watch || isSet("dev"),
         IS_REPORTER: isSet("reporter"),
         IS_STANDALONE: isSet("standalone"),
         IS_UPDATER_DISABLED: isSet("disable-updater"),
@@ -428,7 +462,11 @@ export default defineConfig(async (args, { watch }): Promise<Configuration[] | C
         IS_WEB: false,
         IS_USERSCRIPT: false,
         BUILD_TIMESTAMP: Math.floor(Number(process.env.SOURCE_DATE_EPOCH) || Date.now()),
+        RSPACK_SERVE
     } satisfies ENV;
+    // if (await exists(resolve(__dirname, "dist")) && (await stat(resolve(__dirname, "dist"))).isDirectory()) {
+    // await rm(resolve(__dirname, "dist"), { recursive: true });
+    // }
     return Promise.all([
         makeRendererConfig({
             ...env,
@@ -437,6 +475,10 @@ export default defineConfig(async (args, { watch }): Promise<Configuration[] | C
         makeRendererConfig({
             ...env,
             IS_DISCORD_DESKTOP: true
-        })
+        }),
+        ...(RSPACK_SERVE ? [
+            makeRendererStub({ ...env, IS_DISCORD_DESKTOP: true }),
+            makeRendererStub({ ...env, IS_VESKTOP: true }),
+        ] : [])
     ]);
 });
