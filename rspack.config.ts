@@ -242,18 +242,16 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
         PROCESS_PLATFORM,
         RSPACK_SERVE
     } = env;
-    const filename = `${RSPACK_SERVE ? "Server_" : ""}${getRendererFileName(env)}.js`;
     return {
         entry: './src/Vencord.ts',
         mode: IS_DEV ? 'development' : 'production',
         output: {
             path: resolve(__dirname, 'dist'),
             library: "Vencord",
-            filename,
-            publicPath: "/asdasd/asd",
-            // ...(RSPACK_SERVE ? {
-            //     publicPath: "asdasd"
-            // } : {})
+            filename: `${false ? "Server_" : ""}${getRendererFileName(env)}.js`,
+            ...(RSPACK_SERVE ? {
+                publicPath: "http://localhost:8080/"
+            } : {})
         },
         plugins: [
             // Learn more about plugins from https://webpack.js.org/configuration/plugins/
@@ -268,11 +266,11 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
             }),
             new FileResolverPlugin(),
             new ManagedCssPlugin(),
-            // new RsdoctorRspackMultiplePlugin({
-            //     supports: {
-            //         generateTileGraph: true
-            //     },
-            // }),
+            new RsdoctorRspackMultiplePlugin({
+                supports: {
+                    generateTileGraph: true
+                },
+            }),
             new ProvidePlugin({
                 VencordCreateElement: resolve(__dirname, join("scripts", "build", "inject", "create.mjs")),
                 VencordFragment: resolve(__dirname, join("scripts", "build", "inject", "fragment.mjs")),
@@ -299,28 +297,42 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
         target: ["web", "es2022"],
         devServer: {
             hot: true,
+            liveReload: false,
             port: 8080,
             host: "localhost",
             webSocketServer: "ws",
+            allowedHosts: "all",
             devMiddleware: {
-                writeToDisk: true,
-                publicPath: "asdasd"
+                writeToDisk: true
             },
-            static: {
-                publicPath: "asdasd",
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
             },
-            proxy: [(req, res) => {
-                console.log(req);
-                console.log(res);
-                return {};
-            }],
-            compress: true
+            client: {
+                logging: "verbose",
+                overlay: {
+                    runtimeErrors: function (error) {
+                        const allowed = [
+                            "Sentry successfully disabled",
+                            "ResizeObserver loop completed with undelivered notifications",
+                            "You are being rate limited"
+                        ];
+                        if (allowed.some(e => error.message.includes(e))) {
+                            return false;
+                        }
+                        return true;
+                    },
+                },
+            },
         },
         optimization: {
             moduleIds: IS_DEV ? undefined : "natural",
             splitChunks: false,
             minimizer: [
                 new EsbuildPlugin({
+                    css: true,
                     target: "esnext",
                     define: Object.fromEntries(Object.entries({
                         IS_WEB,
@@ -337,6 +349,7 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                             ["process.platform"]: PROCESS_PLATFORM,
                         })
                     }).map(([k, v]) => [k, String(v)])),
+                    legalComments: "none",
                     minify: true,
                     treeShaking: true,
                 }),
@@ -432,7 +445,8 @@ function makeRendererStub(env: ENV): RspackOptions {
         entry: resolve(__dirname, join("scripts", env.IS_VESKTOP ? "vesktopStub.js" : "desktopStub.js")),
         output: {
             path: resolve(__dirname, "dist"),
-            filename: `${getRendererFileName(env)}.js`
+            filename: `${getRendererFileName(env)}.js`,
+            publicPath: "",
         },
     };
 }
@@ -476,9 +490,9 @@ export default defineConfig(async function (args, { watch, env: { RSPACK_SERVE }
             ...env,
             IS_DISCORD_DESKTOP: true
         }),
-        ...(RSPACK_SERVE ? [
-            makeRendererStub({ ...env, IS_DISCORD_DESKTOP: true }),
-            makeRendererStub({ ...env, IS_VESKTOP: true }),
-        ] : [])
+        // ...(RSPACK_SERVE ? [
+        //     makeRendererStub({ ...env, IS_DISCORD_DESKTOP: true }),
+        //     makeRendererStub({ ...env, IS_VESKTOP: true }),
+        // ] : [])
     ]);
 });
