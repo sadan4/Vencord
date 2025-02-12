@@ -1,19 +1,14 @@
 import path, { join, resolve, extname, dirname, relative } from 'path';
-import { Compiler, Configuration, CssExtractRspackPlugin, DefinePlugin, HotModuleReplacementPlugin, ProvidePlugin, RspackOptions, RspackPluginInstance, SwcJsMinimizerRspackPlugin } from "@rspack/core";
+import { Compiler, Configuration, CssExtractRspackPlugin, ProvidePlugin, RspackOptions, RspackPluginInstance } from "@rspack/core";
 import "webpack-dev-server";
-import { readFile } from "fs/promises";
-import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writeFileSync, Dirent, stat, rm } from "fs-extra";
+import { ensureDirSync, exists, existsSync, mkdirSync, readdir, removeSync, writeFileSync, Dirent, readFile } from "fs-extra";
 import crypto from "crypto";
 import { exec, execSync } from "child_process";
 import { promisify } from "util";
 import { ManagedCssPlugin } from "./managed-css";
 import { defineConfig } from "@rspack/cli";
-import { Config } from "@swc/types";
-import { RsdoctorRspackMultiplePlugin } from "@rsdoctor/rspack-plugin";
 import { EsbuildPlugin } from "esbuild-loader";
-import { Target } from "puppeteer-core";
 import { TransformOptions } from "esbuild";
-import CircularDepPlugin from "circular-dependency-plugin";
 interface ENV {
     IS_WEB: boolean;
     IS_EXTENSION: boolean;
@@ -266,27 +261,10 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
             }),
             new FileResolverPlugin(),
             new ManagedCssPlugin(),
-            new RsdoctorRspackMultiplePlugin({
-                supports: {
-                    generateTileGraph: true
-                },
-            }),
             new ProvidePlugin({
                 VencordCreateElement: resolve(__dirname, join("scripts", "build", "inject", "create.mjs")),
                 VencordFragment: resolve(__dirname, join("scripts", "build", "inject", "fragment.mjs")),
             }),
-            // new CircularDepPlugin({
-            //     // exclude detection of files based on a RegExp
-            //     exclude: /never.never/,
-            //     // include specific files based on a RegExp
-            //     include: /src|node_modules/,
-            //     // add errors to webpack instead of warnings
-            //     // allow import cycles that include an asyncronous import,
-            //     // e.g. via import(/* webpackMode: "weak" */ './file.js')
-            //     allowAsyncCycles: false,
-            //     // set the current working directory for displaying module paths
-            //     cwd: process.cwd(),
-            // })
         ],
         resolve: {
             extensions: ['.tsx', '.ts', '.jsx', '.js', '...'],

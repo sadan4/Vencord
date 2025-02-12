@@ -1,4 +1,4 @@
-import { Compiler, LoaderContext, LoaderDefinitionFunction, RspackPluginInstance } from "@rspack/core";
+import { Compiler, LoaderDefinitionFunction, RspackPluginInstance } from "@rspack/core";
 import { resolve, relative } from "path";
 import { transform } from "lightningcss";
 import { hash as h64 } from "@intrnl/xxhash64";
