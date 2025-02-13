@@ -38,8 +38,8 @@ importers:
         specifier: ^5.0.9
         version: 5.0.9
       virtual-merge:
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: file:../virtual-merge-horror
+        version: file:../virtual-merge-horror
     devDependencies:
       '@rspack/cli':
         specifier: ^1.2.3
@@ -71,6 +71,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.2
         version: 19.0.2(@types/react@19.0.2)
+      '@types/webpack-env':
+        specifier: ^1.18.8
+        version: 1.18.8
       '@types/yazl':
         specifier: ^2.4.5
         version: 2.4.5
@@ -1041,6 +1044,9 @@ packages:
 
   '@types/sockjs@0.3.36':
     resolution: {integrity: sha512-MK9V6NzAS1+Ud7JV9lJLFqW85VbC9dq3LmwZCuBe4wBDgKC0Kj/jd8Xl+nSviU+Qc3+m7umHHyHg//2KSa0a0Q==}
+
+  '@types/webpack-env@1.18.8':
+    resolution: {integrity: sha512-G9eAoJRMLjcvN4I08wB5I7YofOb/kaJNd5uoCMX+LbKXTPCF+ZIHuqTnFaK9Jz1rgs035f9JUPUhNFtqgucy/A==}
 
   '@types/ws@8.5.14':
     resolution: {integrity: sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw==}
@@ -3896,8 +3902,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  virtual-merge@1.0.1:
-    resolution: {integrity: sha512-h7rzV6n5fZJbDu2lP4iu+IOtsZ00uqECFUxFePK1uY0pz/S5B7FNDJpmdDVfyGL7poyJECEHfTaIpJaknNkU0Q==}
+  virtual-merge@file:../virtual-merge-horror:
+    resolution: {directory: ../virtual-merge-horror, type: directory}
 
   vscode-oniguruma@1.7.0:
     resolution: {integrity: sha512-L9WMGRfrjOhgHSdOYgCt/yRMsXzLDJSL7BPrOZt73gU0iWO4mpqzqQzOz5srxqTvMBaR0XZTSrVWo4j55Rc6cA==}
@@ -4744,6 +4750,8 @@ snapshots:
   '@types/sockjs@0.3.36':
     dependencies:
       '@types/node': 22.10.5
+
+  '@types/webpack-env@1.18.8': {}
 
   '@types/ws@8.5.14':
     dependencies:
@@ -8097,7 +8105,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  virtual-merge@1.0.1: {}
+  virtual-merge@file:../virtual-merge-horror: {}
 
   vscode-oniguruma@1.7.0: {}
 

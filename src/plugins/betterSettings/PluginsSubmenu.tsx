@@ -5,11 +5,10 @@
  */
 
 import { openPluginModal } from "@components/PluginSettings/PluginModal";
+import { plugins } from "@plugins";
 import { getIntlMessage } from "@utils/discord";
 import { isObjectEmpty } from "@utils/misc";
 import { Alerts, Menu, useMemo, useState } from "@webpack/common";
-
-import Plugins from "~plugins";
 
 function onRestartNeeded() {
     Alerts.show({
@@ -22,12 +21,12 @@ function onRestartNeeded() {
 }
 
 export default function PluginsSubmenu() {
-    const sortedPlugins = useMemo(() => Object.values(Plugins)
+    const sortedPlugins = useMemo(() => Object.values(plugins)
         .sort((a, b) => a.name.localeCompare(b.name)), []);
     const [query, setQuery] = useState("");
 
     const search = query.toLowerCase();
-    const include = (p: typeof Plugins[keyof typeof Plugins]) => (
+    const include = (p: typeof plugins[keyof typeof plugins]) => (
         Vencord.Plugins.isPluginEnabled(p.name)
         && p.options && !isObjectEmpty(p.options)
         && (

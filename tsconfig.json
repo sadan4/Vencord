@@ -45,13 +45,10 @@
                 "./src/webpack/webpack"
             ],
             "@webpack/patcher": [
-                "./webpack/patchWebpack"
+                "./src/webpack/patchWebpack"
             ],
             "@webpack/wreq.d": [
-                "./webpack/wreq.d"
-            ],
-            "plugins": [
-                "./src/plugins/index"
+                "./src/webpack/wreq.d"
             ],
             "Vencord": [
                 "./src/Vencord"
@@ -61,6 +58,9 @@
             ],
             "webpack/patchWebpack": [
                 "./src/webpack/patchWebpack"
+            ],
+            "@plugins": [
+                "./src/plugins"
             ]
         },
         "plugins": [

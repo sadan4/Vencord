@@ -21,10 +21,9 @@ export default name;
 `;
 };
 export class ManagedCssPlugin implements RspackPluginInstance {
-    static PLUGIN_NAME = ManagedCssPlugin.prototype.PLUGIN_NAME;
-    PLUGIN_NAME = "ManagedCssPlugin";
+    static PLUGIN_NAME = "ManagedCssPlugin";
     apply(compiler: Compiler) {
-        const { PLUGIN_NAME } = this;
+        const { PLUGIN_NAME } = ManagedCssPlugin;
         compiler.hooks.normalModuleFactory.tap(PLUGIN_NAME, (nmf) => {
             nmf.hooks.resolve.tap(PLUGIN_NAME, (data) => {
                 if (data.request.match(/\.css\?managed$/)) {

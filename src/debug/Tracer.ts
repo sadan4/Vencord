@@ -18,6 +18,7 @@
 
 import { Logger } from "@utils/Logger";
 
+
 if (IS_DEV || IS_REPORTER) {
     var traces = {} as Record<string, [number, any[]]>;
     var logger = new Logger("Tracer", "#FFD166");

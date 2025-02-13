@@ -33,16 +33,27 @@ import { Patch, Plugin, PluginDef, ReporterTestable, StartAt } from "@utils/type
 import { FluxDispatcher } from "@webpack/common";
 import { patches } from "@webpack/patcher";
 import { FluxEvents } from "@webpack/types";
+import { traceFunction } from "debug/Tracer";
 
-import Plugins from "~plugins";
-
-import { traceFunction } from "../debug/Tracer";
+import Plugins, { ExcludedPlugins, PluginMeta } from "~plugins";
 
 const logger = new Logger("PluginManager", "#a6d189");
 
 export const PMLogger = logger;
 export const plugins = Plugins;
-export { patches };
+export {
+    ExcludedPlugins,
+    patches,
+    PluginMeta,
+};
+
+let shouldInit = true;
+
+if (module?.hot?.data) {
+    module.hot.accept();
+    console.log("module.hot is true", module.hot);
+    shouldInit = false;
+}
 
 /** Whether we have subscribed to flux events of all the enabled plugins when FluxDispatcher was ready */
 let enabledPluginsSubscribedFlux = false;
@@ -50,6 +61,8 @@ const subscribedFluxEventsPlugins = new Set<string>();
 
 const pluginsValues = Object.values(Plugins);
 const settings = Settings.plugins;
+
+const neededApiPlugins = new Set<string>();
 
 export function isPluginEnabled(p: string) {
     return (
@@ -96,81 +109,85 @@ function isReporterTestable(p: Plugin, part: ReporterTestable) {
 
 const pluginKeysToBind: Array<keyof PluginDef & `${"on" | "render"}${string}`> = [
     "onBeforeMessageEdit", "onBeforeMessageSend", "onMessageClick",
-    "renderChatBarButton", "renderMemberListDecorator", "renderMessageAccessory", "renderMessageDecoration", "renderMessagePopoverButton"
+    "renderChatBarButton", "renderMemberListDecorator", "renderMessageAccessory", "renderMessageDecoration", "renderMessagePopoverButton",
 ];
 
-const neededApiPlugins = new Set<string>();
 
 // First round-trip to mark and force enable dependencies
 //
 // FIXME: might need to revisit this if there's ever nested (dependencies of dependencies) dependencies since this only
 // goes for the top level and their children, but for now this works okay with the current API plugins
-for (const p of pluginsValues) if (isPluginEnabled(p.name)) {
-    p.dependencies?.forEach(d => {
-        const dep = Plugins[d];
+if (shouldInit) {
+    for (const p of pluginsValues) if (isPluginEnabled(p.name)) {
+        p.dependencies?.forEach(d => {
+            const dep = Plugins[d];
 
-        if (!dep) {
-            const error = new Error(`Plugin ${p.name} has unresolved dependency ${d}`);
+            if (!dep) {
+                const error = new Error(`Plugin ${p.name} has unresolved dependency ${d}`);
 
-            if (IS_DEV) {
-                throw error;
+                if (IS_DEV) {
+                    throw error;
+                }
+
+                logger.warn(error);
+                return;
             }
 
-            logger.warn(error);
-            return;
-        }
+            settings[d].enabled = true;
+            dep.isDependency = true;
+        });
 
-        settings[d].enabled = true;
-        dep.isDependency = true;
-    });
+        if (p.commands?.length) neededApiPlugins.add("CommandsAPI");
+        if (p.onBeforeMessageEdit || p.onBeforeMessageSend || p.onMessageClick) neededApiPlugins.add("MessageEventsAPI");
+        if (p.renderChatBarButton) neededApiPlugins.add("ChatInputButtonAPI");
+        if (p.renderMemberListDecorator) neededApiPlugins.add("MemberListDecoratorsAPI");
+        if (p.renderMessageAccessory) neededApiPlugins.add("MessageAccessoriesAPI");
+        if (p.renderMessageDecoration) neededApiPlugins.add("MessageDecorationsAPI");
+        if (p.renderMessagePopoverButton) neededApiPlugins.add("MessagePopoverAPI");
+        if (p.userProfileBadge) neededApiPlugins.add("BadgeAPI");
 
-    if (p.commands?.length) neededApiPlugins.add("CommandsAPI");
-    if (p.onBeforeMessageEdit || p.onBeforeMessageSend || p.onMessageClick) neededApiPlugins.add("MessageEventsAPI");
-    if (p.renderChatBarButton) neededApiPlugins.add("ChatInputButtonAPI");
-    if (p.renderMemberListDecorator) neededApiPlugins.add("MemberListDecoratorsAPI");
-    if (p.renderMessageAccessory) neededApiPlugins.add("MessageAccessoriesAPI");
-    if (p.renderMessageDecoration) neededApiPlugins.add("MessageDecorationsAPI");
-    if (p.renderMessagePopoverButton) neededApiPlugins.add("MessagePopoverAPI");
-    if (p.userProfileBadge) neededApiPlugins.add("BadgeAPI");
-
-    for (const key of pluginKeysToBind) {
-        p[key] &&= p[key].bind(p) as any;
-    }
-}
-
-for (const p of neededApiPlugins) {
-    Plugins[p].isDependency = true;
-    settings[p].enabled = true;
-}
-
-for (const p of pluginsValues) {
-    if (p.settings) {
-        p.options ??= {};
-
-        p.settings.pluginName = p.name;
-        for (const name in p.settings.def) {
-            const def = p.settings.def[name];
-            const checks = p.settings.checks?.[name];
-            p.options[name] = { ...def, ...checks };
+        for (const key of pluginKeysToBind) {
+            p[key] &&= p[key].bind(p) as any;
         }
     }
 
-    if (p.options) {
-        for (const name in p.options) {
-            const opt = p.options[name];
-            if (opt.onChange != null) {
-                SettingsStore.addChangeListener(`plugins.${p.name}.${name}`, opt.onChange);
+    for (const p of neededApiPlugins) {
+        Plugins[p].isDependency = true;
+        settings[p].enabled = true;
+    }
+
+    for (const p of pluginsValues) {
+        if (p.settings) {
+            p.options ??= {};
+
+            p.settings.pluginName = p.name;
+            for (const name in p.settings.def) {
+                const def = p.settings.def[name];
+                const checks = p.settings.checks?.[name];
+                p.options[name] = { ...def, ...checks };
+            }
+        }
+
+        if (p.options) {
+            for (const name in p.options) {
+                const opt = p.options[name];
+                if (opt.onChange != null) {
+                    SettingsStore.addChangeListener(`plugins.${p.name}.${name}`, opt.onChange);
+                }
+            }
+        }
+
+        if (p.patches && isPluginEnabled(p.name)) {
+            if (!IS_REPORTER || isReporterTestable(p, ReporterTestable.Patches)) {
+                for (const patch of p.patches) {
+                    addPatch(patch, p.name);
+                }
             }
         }
     }
-
-    if (p.patches && isPluginEnabled(p.name)) {
-        if (!IS_REPORTER || isReporterTestable(p, ReporterTestable.Patches)) {
-            for (const patch of p.patches) {
-                addPatch(patch, p.name);
-            }
-        }
-    }
+} else {
+    // reload plugins
+    console.error("Reloading plugins is not supported yet");
 }
 
 export const startAllPlugins = traceFunction("startAllPlugins", function startAllPlugins(target: StartAt) {
@@ -186,7 +203,7 @@ export const startAllPlugins = traceFunction("startAllPlugins", function startAl
         }
     }
 });
-
+console.log("startAllPlugins", startAllPlugins);
 export function startDependenciesRecursive(p: Plugin) {
     let restartNeeded = false;
     const failures: string[] = [];

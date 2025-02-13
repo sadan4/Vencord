@@ -16,16 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-console.log("here");
-
 export * as Api from "./api";
 export * as Components from "./components";
-export * as Plugins from "./plugins";
 export * as Util from "./utils";
 export * as QuickCss from "./utils/quickCss";
 export * as Updater from "./utils/updater";
 export * as Webpack from "./webpack";
 export * as WebpackPatcher from "./webpack/patchWebpack";
+export * as Plugins from "@plugins";
 
 import "./utils/quickCss";
 import "./webpack/patchWebpack";
@@ -36,7 +34,7 @@ import { StartAt } from "@utils/types";
 import { get as dsGet } from "./api/DataStore";
 import { showNotification } from "./api/Notifications";
 import { PlainSettings, Settings } from "./api/Settings";
-import { patches, PMLogger, startAllPlugins } from "./plugins";
+import { patches, PMLogger, startAllPlugins } from "./plugins/index";
 import { localStorage } from "./utils/localStorage";
 import { relaunch } from "./utils/native";
 import { getCloudSettings, putCloudSettings } from "./utils/settingsSync";
@@ -44,7 +42,7 @@ import { checkForUpdates, update, UpdateLogger } from "./utils/updater";
 import { onceReady } from "./webpack";
 import { SettingsRouter } from "./webpack/common";
 export { PlainSettings, Settings };
-
+console.log(startAllPlugins);
 if (IS_REPORTER) {
     require("./debug/runReporter");
 }

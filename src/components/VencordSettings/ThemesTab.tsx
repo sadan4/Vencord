@@ -23,6 +23,7 @@ import { DeleteIcon, FolderIcon, PaintbrushIcon, PencilIcon, PlusIcon, RestartIc
 import { Link } from "@components/Link";
 import { openPluginModal } from "@components/PluginSettings/PluginModal";
 import type { UserThemeHeader } from "@main/themes";
+import { plugins } from "@plugins";
 import { openInviteModal } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { showItemInFolder } from "@utils/native";
@@ -30,8 +31,6 @@ import { useAwaiter } from "@utils/react";
 import { findLazy } from "@webpack";
 import { Card, Forms, React, showToast, TabBar, TextArea, useEffect, useRef, useState } from "@webpack/common";
 import type { ComponentType, Ref, SyntheticEvent } from "react";
-
-import Plugins from "~plugins";
 
 import { AddonCard } from "./AddonCard";
 import { QuickAction, QuickActionCard } from "./quickActions";
@@ -260,7 +259,7 @@ function ThemesTab() {
                             {Settings.plugins.ClientTheme.enabled && (
                                 <QuickAction
                                     text="Edit ClientTheme"
-                                    action={() => openPluginModal(Plugins.ClientTheme)}
+                                    action={() => openPluginModal(plugins.ClientTheme)}
                                     Icon={PencilIcon}
                                 />
                             )}

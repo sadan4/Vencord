@@ -305,6 +305,12 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                 },
             },
         },
+        performance: {
+            assetFilter: function (assetFilename) {
+                return !/\.(?:map|js)$/.test(assetFilename);
+            },
+            maxEntrypointSize: 1024 * 1024 * 1024,
+        },
         optimization: {
             moduleIds: IS_DEV ? undefined : "natural",
             splitChunks: false,
@@ -331,7 +337,8 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                     minify: true,
                     treeShaking: true,
                 }),
-            ]
+            ],
+            concatenateModules: true,
         },
         module: {
             rules: [
