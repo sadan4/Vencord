@@ -42,7 +42,18 @@ import { checkForUpdates, update, UpdateLogger } from "./utils/updater";
 import { onceReady } from "./webpack";
 import { SettingsRouter } from "./webpack/common";
 export { PlainSettings, Settings };
-console.log(startAllPlugins);
+
+let shouldInit = true;
+module.hot?.accept();
+if (module.hot?.data) {
+    try {
+        window.Vencord = __webpack_module__.exports;
+    } catch (e) {
+        console.error("Failed to re-export Vencord", e);
+        import.meta.webpackHot?.invalidate();
+    }
+    shouldInit = false;
+}
 if (IS_REPORTER) {
     require("./debug/runReporter");
 }
@@ -136,8 +147,10 @@ async function init() {
     }
 }
 
-startAllPlugins(StartAt.Init);
-init();
+if (shouldInit) {
+    startAllPlugins(StartAt.Init);
+    init();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     startAllPlugins(StartAt.DOMContentLoaded);

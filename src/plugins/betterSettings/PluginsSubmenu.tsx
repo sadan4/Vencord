@@ -5,7 +5,7 @@
  */
 
 import { openPluginModal } from "@components/PluginSettings/PluginModal";
-import { plugins } from "@plugins";
+import { plugins as Plugins } from "@plugins";
 import { getIntlMessage } from "@utils/discord";
 import { isObjectEmpty } from "@utils/misc";
 import { Alerts, Menu, useMemo, useState } from "@webpack/common";
@@ -21,12 +21,12 @@ function onRestartNeeded() {
 }
 
 export default function PluginsSubmenu() {
-    const sortedPlugins = useMemo(() => Object.values(plugins)
+    const sortedPlugins = useMemo(() => Object.values(Plugins)
         .sort((a, b) => a.name.localeCompare(b.name)), []);
     const [query, setQuery] = useState("");
 
     const search = query.toLowerCase();
-    const include = (p: typeof plugins[keyof typeof plugins]) => (
+    const include = (p: typeof Plugins[keyof typeof Plugins]) => (
         Vencord.Plugins.isPluginEnabled(p.name)
         && p.options && !isObjectEmpty(p.options)
         && (

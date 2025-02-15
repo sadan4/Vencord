@@ -203,7 +203,6 @@ export const startAllPlugins = traceFunction("startAllPlugins", function startAl
         }
     }
 });
-console.log("startAllPlugins", startAllPlugins);
 export function startDependenciesRecursive(p: Plugin) {
     let restartNeeded = false;
     const failures: string[] = [];

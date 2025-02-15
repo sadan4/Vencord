@@ -48,7 +48,7 @@ function ContributorModal({ user }: { user: User; }) {
     const githubName = profile?.connectedAccounts?.find(a => a.type === "github")?.name;
     const website = profile?.connectedAccounts?.find(a => a.type === "domain")?.name;
 
-    const plugins = useMemo(() => {
+    const filteredPlugins = useMemo(() => {
         const allPlugins = Object.values(plugins);
         const pluginsByAuthor = DevsById[user.id]
             ? allPlugins.filter(p => p.authors.includes(DevsById[user.id]))
@@ -87,9 +87,9 @@ function ContributorModal({ user }: { user: User; }) {
                 </div>
             </div>
 
-            {plugins.length ? (
+            {filteredPlugins.length ? (
                 <Forms.FormText>
-                    This person has {ContributedHyperLink} to {pluralise(plugins.length, "plugin")}!
+                    This person has {ContributedHyperLink} to {pluralise(filteredPlugins.length, "plugin")}!
                 </Forms.FormText>
             ) : (
                 <Forms.FormText>
@@ -97,9 +97,9 @@ function ContributorModal({ user }: { user: User; }) {
                 </Forms.FormText>
             )}
 
-            {!!plugins.length && (
+            {!!filteredPlugins.length && (
                 <div className={cl("plugins")}>
-                    {plugins.map(p =>
+                    {filteredPlugins.map(p =>
                         <PluginCard
                             key={p.name}
                             plugin={p}

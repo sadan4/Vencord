@@ -17,8 +17,13 @@
 */
 
 import { LoDashStatic } from "lodash";
-
 declare global {
+    declare namespace __WebpackModuleApi {
+        interface Hot {
+            invalidate(): void;
+        }
+    }
+    declare var __webpack_module__: NodeModule;
     /**
      * This exists only at build time, so references to it in patches should insert it
      * via String interpolation OR use different replacement code based on this

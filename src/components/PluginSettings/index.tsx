@@ -26,7 +26,6 @@ import { CogWheel, InfoIcon } from "@components/Icons";
 import { openPluginModal } from "@components/PluginSettings/PluginModal";
 import { AddonCard } from "@components/VencordSettings/AddonCard";
 import { SettingsTab } from "@components/VencordSettings/shared";
-import { ExcludedPlugins, plugins } from "@plugins";
 import { ChangeList } from "@utils/ChangeList";
 import { proxyLazy } from "@utils/lazy";
 import { Logger } from "@utils/Logger";
@@ -39,7 +38,7 @@ import { Alerts, Button, Card, Forms, lodash, Parser, React, Select, Text, TextI
 import { JSX } from "react";
 
 // Avoid circular dependency
-const { startDependenciesRecursive, startPlugin, stopPlugin } = proxyLazy(() => require("../../plugins"));
+const { startDependenciesRecursive, startPlugin, stopPlugin, plugins: Plugins, ExcludedPlugins } = proxyLazy(() => require("@plugins") as typeof import("@plugins"));
 
 const cl = classNameFactory("vc-plugins-");
 const logger = new Logger("PluginSettings", "#a6d189");
@@ -229,8 +228,8 @@ export default function PluginSettings() {
 
     const depMap = React.useMemo(() => {
         const o = {} as Record<string, string[]>;
-        for (const plugin in plugins) {
-            const deps = plugins[plugin].dependencies;
+        for (const plugin in Plugins) {
+            const deps = Plugins[plugin].dependencies;
             if (deps) {
                 for (const dep of deps) {
                     o[dep] ??= [];
@@ -241,7 +240,7 @@ export default function PluginSettings() {
         return o;
     }, []);
 
-    const sortedPlugins = useMemo(() => Object.values(plugins)
+    const sortedPlugins = useMemo(() => Object.values(Plugins)
         .sort((a, b) => a.name.localeCompare(b.name)), []);
 
     const [searchValue, setSearchValue] = React.useState({ value: "", status: SearchStatus.ALL });
@@ -250,7 +249,7 @@ export default function PluginSettings() {
     const onSearch = (query: string) => setSearchValue(prev => ({ ...prev, value: query }));
     const onStatusChange = (status: SearchStatus) => setSearchValue(prev => ({ ...prev, status }));
 
-    const pluginFilter = (plugin: typeof plugins[keyof typeof plugins]) => {
+    const pluginFilter = (plugin: typeof Plugins[keyof typeof Plugins]) => {
         const { status } = searchValue;
         const enabled = Vencord.Plugins.isPluginEnabled(plugin.name);
         if (enabled && status === SearchStatus.DISABLED) return false;

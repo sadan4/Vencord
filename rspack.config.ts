@@ -248,6 +248,7 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                 publicPath: "http://localhost:8080/"
             } : {})
         },
+        devtool: "eval-source-map",
         plugins: [
             // Learn more about plugins from https://webpack.js.org/configuration/plugins/
             // new GitHashPlugin,
@@ -338,7 +339,6 @@ async function makeRendererConfig(env: ENV): Promise<Configuration> {
                     treeShaking: true,
                 }),
             ],
-            concatenateModules: true,
         },
         module: {
             rules: [
