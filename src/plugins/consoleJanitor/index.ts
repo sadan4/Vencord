@@ -69,14 +69,14 @@ export default definePlugin({
         {
             find: "https://github.com/highlightjs/highlight.js/issues/2277",
             replacement: {
-                match: /(?<=&&\()console.log\(`Deprecated.+?`\),/,
-                replace: ""
+                match: /\(console.log\(`Deprecated.+?`\),/,
+                replace: "("
             }
         },
         {
-            find: 'react-spring: The "interpolate" function',
+            find: 'The "interpolate" function is deprecated in v10 (use "to" instead)',
             replacement: {
-                match: /,console.warn\('react-spring: The "interpolate" function is deprecated in v10 \(use "to" instead\)'\)/,
+                match: /,console.warn\(\i\+'The "interpolate" function is deprecated in v10 \(use "to" instead\)'\)/,
                 replace: ""
             }
         },
@@ -95,10 +95,9 @@ export default definePlugin({
             }
         },
         {
-            find: 'console.warn("[DEPRECATED] Please use `subscribeWithSelector` middleware");',
-            all: true,
+            find: '"AppCrashedFatalReport: getLastCrash not supported."',
             replacement: {
-                match: /console\.warn\("\[DEPRECATED\] Please use `subscribeWithSelector` middleware"\);/,
+                match: /console\.log\("AppCrashedFatalReport: getLastCrash not supported\."\);/,
                 replace: ""
             }
         },
@@ -133,7 +132,7 @@ export default definePlugin({
         {
             find: "Slow dispatch on",
             replacement: {
-                match: /\i\.totalTime>100&&\i\.verbose\("Slow dispatch on ".+?\)\);/,
+                match: /\i\.totalTime>\i&&\i\.verbose\("Slow dispatch on ".+?\)\);/,
                 replace: ""
             }
         },
