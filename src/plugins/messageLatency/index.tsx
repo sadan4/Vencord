@@ -26,7 +26,7 @@ interface Diff {
 }
 
 const DISCORD_KT_DELAY = 1471228928;
-const HiddenVisually = findComponentByCodeLazy(".hiddenVisually]:");
+const HiddenVisually = findComponentByCodeLazy(".hiddenVisually]:", { name: "HiddenVisually" });
 
 export default definePlugin({
     name: "MessageLatency",

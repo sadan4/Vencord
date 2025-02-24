@@ -17,7 +17,7 @@ import { useCurrentUserDecorationsStore } from "../../lib/stores/CurrentUserDeco
 import { cl, DecorationModalStyles, requireAvatarDecorationModal, requireCreateStickerModal } from "../";
 import { AvatarDecorationModalPreview } from "../components";
 
-const FileUpload = findComponentByCodeLazy("fileUploadInput,");
+const FileUpload = findComponentByCodeLazy("fileUploadInput,", { name: "FileUpload" });
 
 const { HelpMessage, HelpMessageTypes } = mapMangledModuleLazy('POSITIVE=3]="POSITIVE', {
     HelpMessageTypes: filters.byProps("POSITIVE", "WARNING", "INFO"),

@@ -19,7 +19,7 @@ interface UserProfileProps {
     originalRenderPopout: () => React.ReactNode;
 }
 
-const UserProfile = findComponentByCodeLazy("UserProfilePopoutWrapper: user cannot be undefined");
+const UserProfile = findComponentByCodeLazy("UserProfilePopoutWrapper: user cannot be undefined", { name: "UserProfile" });
 const styles = findByPropsLazy("accountProfilePopoutWrapper");
 
 let openAlternatePopout = false;

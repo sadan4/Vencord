@@ -25,7 +25,7 @@ import { findComponentByCodeLazy } from "@webpack";
 
 import managedStyle from "./style.css?managed";
 
-const Button = findComponentByCodeLazy(".NONE,disabled:", ".PANEL_BUTTON");
+const Button = findComponentByCodeLazy(".NONE,disabled:", ".PANEL_BUTTON", { name: "Button" });
 
 const ShowCurrentGame = getUserSettingLazy<boolean>("status", "showCurrentGame")!;
 

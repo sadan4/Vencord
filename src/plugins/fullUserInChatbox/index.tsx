@@ -11,7 +11,7 @@ import { findComponentByCodeLazy } from "@webpack";
 import { UserStore, useStateFromStores } from "@webpack/common";
 import { ReactNode } from "react";
 
-const UserMentionComponent = findComponentByCodeLazy(".USER_MENTION)");
+const UserMentionComponent = findComponentByCodeLazy(".USER_MENTION)", { name: "UserMentionComponent" });
 
 interface UserMentionComponentProps {
     id: string;

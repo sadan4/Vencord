@@ -27,7 +27,7 @@ import { findComponentByCodeLazy } from "@webpack";
 import { Menu, Popout, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
-const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_TOP:", '.iconBadge,"top"');
+const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_TOP:", '.iconBadge,"top"', { name: "HeaderBarIcon" });
 
 function VencordPopout(onClose: () => void) {
     const { useQuickCss } = useSettings(["useQuickCss"]);

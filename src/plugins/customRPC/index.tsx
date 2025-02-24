@@ -31,7 +31,7 @@ import { findByCodeLazy, findComponentByCodeLazy } from "@webpack";
 import { ApplicationAssetUtils, Button, FluxDispatcher, Forms, React, UserStore } from "@webpack/common";
 
 const useProfileThemeStyle = findByCodeLazy("profileThemeStyle:", "--profile-gradient-primary-color");
-const ActivityView = findComponentByCodeLazy(".party?(0", ".card");
+const ActivityView = findComponentByCodeLazy(".party?(0", ".card", { name: "ActivityView" });
 
 const ShowCurrentGame = getUserSettingLazy<boolean>("status", "showCurrentGame")!;
 

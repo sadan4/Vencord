@@ -24,7 +24,7 @@ import type { CSSProperties } from "react";
 import { ExpandedGuildFolderStore, settings } from ".";
 
 const ChannelRTCStore = findStoreLazy("ChannelRTCStore");
-const GuildsBar = findComponentByCodeLazy('("guildsnav")');
+const GuildsBar = findComponentByCodeLazy('("guildsnav")', { name: "GuildsBar" });
 
 export default ErrorBoundary.wrap(guildsBarProps => {
     const expandedFolders = useStateFromStores([ExpandedGuildFolderStore], () => ExpandedGuildFolderStore.getExpandedFolders());

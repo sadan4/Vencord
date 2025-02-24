@@ -34,7 +34,7 @@ const UserSettingsModal = findByPropsLazy("saveAccountChanges", "open");
 const TimestampClasses = findByPropsLazy("timestampTooltip", "blockquoteContainer");
 const SessionIconClasses = findByPropsLazy("sessionIcon");
 
-const BlobMask = findComponentByCodeLazy("!1,lowerBadgeSize:");
+const BlobMask = findComponentByCodeLazy("!1,lowerBadgeSize:", { name: "BlobMask" });
 
 const settings = definePluginSettings({
     backgroundCheck: {

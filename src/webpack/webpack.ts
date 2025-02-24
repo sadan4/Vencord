@@ -475,14 +475,21 @@ export function findComponentLazy<T extends object = any>(filter: FilterFn, opts
 /**
  * Finds the first component that includes all the given code, lazily
  */
-export function findComponentByCodeLazy<T extends object = any>(...code: CodeFilter) {
+export function findComponentByCodeLazy<T extends object = any>(...code: [...CodeFilter, { name: string; }] | CodeFilter) {
+    let name: string | undefined;
+    {
+        const last: any = code.at(-1);
+        if (last && !(last instanceof RegExp || typeof last === "string") && "name" in last) {
+            code.length--;
+            name = last.name;
+        }
+    }
     if (IS_REPORTER) lazyWebpackSearchHistory.push(["findComponentByCode", code]);
-
     return LazyComponent<T>(() => {
-        const res = find(filters.componentByCode(...code), { isIndirect: true });
+        const res = find(filters.componentByCode(...code as CodeFilter), { isIndirect: true });
         if (!res)
             handleModuleNotFound("findComponentByCode", ...code);
-        return res;
+        return wrapComponentName(res, name);
     });
 }
 

@@ -17,7 +17,7 @@ import { Button, Forms, ThemeStore, useStateFromStores } from "@webpack/common";
 
 const cl = classNameFactory("vc-clientTheme-");
 
-const ColorPicker = findComponentByCodeLazy("#{intl::USER_SETTINGS_PROFILE_COLOR_SELECT_COLOR}", ".BACKGROUND_PRIMARY)");
+const ColorPicker = findComponentByCodeLazy("#{intl::USER_SETTINGS_PROFILE_COLOR_SELECT_COLOR}", ".BACKGROUND_PRIMARY)", { name: "ColorPicker" });
 
 const colorPresets = [
     "#1E1514", "#172019", "#13171B", "#1C1C28", "#402D2D",

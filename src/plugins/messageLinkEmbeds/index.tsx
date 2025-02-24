@@ -48,9 +48,9 @@ const messageCache = new Map<string, {
     fetched: boolean;
 }>();
 
-const Embed = findComponentByCodeLazy(".inlineMediaEmbed");
-const AutoModEmbed = findComponentByCodeLazy(".withFooter]:", "childrenMessageContent:");
-const ChannelMessage = findComponentByCodeLazy("childrenExecutedCommand:", ".hideAccessories");
+const Embed = findComponentByCodeLazy(".inlineMediaEmbed", { name: "Embed" });
+const AutoModEmbed = findComponentByCodeLazy(".withFooter]:", "childrenMessageContent:", { name: "AutoModEmbed" });
+const ChannelMessage = findComponentByCodeLazy("childrenExecutedCommand:", ".hideAccessories", { name: "ChannelMessage" });
 
 const SearchResultClasses = findByPropsLazy("message", "searchResult");
 const EmbedClasses = findByPropsLazy("embedAuthorIcon", "embedAuthor", "embedAuthor");

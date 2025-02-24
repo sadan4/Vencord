@@ -32,6 +32,23 @@ export function wrapComponentName<T>(maybeComponent: T, name?: string): T {
     return maybeComponent;
 }
 export function setComponentName(maybeComponent: any, name: string): void {
+    function defineComponentName(propName: "name" | "displayName") {
+        if (Object.hasOwn(maybeComponent, propName)) {
+            const desc = Object.getOwnPropertyDescriptor(maybeComponent, propName);
+            if (desc?.configurable) {
+                Object.defineProperty(maybeComponent, propName, {
+                    configurable: desc.configurable,
+                    writable: desc.writable ?? true,
+                    value: name
+                });
+            }
+        } else {
+            Object.defineProperty(maybeComponent, propName, {
+                configurable: true,
+                value: name
+            });
+        }
+    }
     try {
         if (
             typeof maybeComponent === "function" &&
@@ -41,18 +58,18 @@ export function setComponentName(maybeComponent: any, name: string): void {
             const str: string = (() => { }).toString.call(maybeComponent);
             if (typeof str !== "string") void 0;
             else if (str.startsWith("class")) {
-                Object.defineProperty(maybeComponent, "displayName", { value: name });
+                defineComponentName("displayName");
             } else {
                 // because typeof v === "function" and v is not a class
                 // v must be a function or an arrow function
-                Object.defineProperty(maybeComponent, "name", { value: name });
+                defineComponentName("name");
             }
         } else if (
             "$$typeof" in maybeComponent &&
             typeof maybeComponent.$$typeof === "symbol" &&
             (maybeComponent.$$typeof === SYM_FORWARD_REF || maybeComponent.$$typeof === SYM_MEMO)
         ) {
-            Object.defineProperty(maybeComponent, "displayName", { value: name });
+            defineComponentName("displayName");
         } else {
             throw new Error("Unknown component type, not a function, class, memo or a forwardRef");
         }

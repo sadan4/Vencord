@@ -8,7 +8,7 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { filters, findByCodeLazy, findByPropsLazy, findComponentByCodeLazy, findStoreLazy, mapMangledModuleLazy } from "@webpack";
-import { ChannelRouter, ChannelStore, GuildStore, IconUtils, match, P, PermissionsBits, PermissionStore, React, showToast, Text, Toasts, Tooltip, useMemo, UserStore, useStateFromStores } from "@webpack/common";
+import { Avatar, ChannelRouter, ChannelStore, GuildStore, IconUtils, match, P, PermissionsBits, PermissionStore, React, showToast, Text, Toasts, Tooltip, useMemo, UserStore, UserSummaryItem, useStateFromStores } from "@webpack/common";
 import { Channel } from "discord-types/general";
 
 const cl = classNameFactory("vc-uvs-");
@@ -20,9 +20,7 @@ const { useChannelName } = mapMangledModuleLazy("#{intl::GROUP_DM_ALONE}", {
 const getDMChannelIcon = findByCodeLazy(".getChannelIconURL({");
 const VoiceStateStore = findStoreLazy("VoiceStateStore");
 
-const UserSummaryItem = findComponentByCodeLazy("defaultRenderUser", "showDefaultAvatarsForNullUsers");
-const Avatar = findComponentByCodeLazy(".status)/2):0");
-const GroupDMAvatars = findComponentByCodeLazy("frontSrc:", "getAvatarURL");
+const GroupDMAvatars = findComponentByCodeLazy("frontSrc:", "getAvatarURL", { name: "GroupDMAvatars" });
 
 const ActionButtonClasses = findByPropsLazy("actionButton", "highlight");
 

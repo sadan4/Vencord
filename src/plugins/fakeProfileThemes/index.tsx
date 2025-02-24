@@ -109,8 +109,8 @@ interface ProfileModalProps {
     isTryItOutFlow: boolean;
 }
 
-const ColorPicker = findComponentByCodeLazy<ColorPickerProps>("#{intl::USER_SETTINGS_PROFILE_COLOR_SELECT_COLOR}", ".BACKGROUND_PRIMARY)");
-const ProfileModal = findComponentByCodeLazy<ProfileModalProps>("isTryItOutFlow:", "pendingThemeColors:", "pendingAvatarDecoration:", "EDIT_PROFILE_BANNER");
+const ColorPicker = findComponentByCodeLazy<ColorPickerProps>("#{intl::USER_SETTINGS_PROFILE_COLOR_SELECT_COLOR}", ".BACKGROUND_PRIMARY)", { name: "ColorPicker" });
+const ProfileModal = findComponentByCodeLazy<ProfileModalProps>("isTryItOutFlow:", "pendingThemeColors:", "pendingAvatarDecoration:", "EDIT_PROFILE_BANNER", { name: "ProfileModal" });
 
 const requireColorPicker = extractAndLoadChunksLazy(["#{intl::USER_SETTINGS_PROFILE_COLOR_DEFAULT_BUTTON}"], /createPromise:\(\)=>\i\.\i(\("?.+?"?\)).then\(\i\.bind\(\i,"?(.+?)"?\)\)/);
 
