@@ -167,11 +167,11 @@ waitFor(["open", "saveAccountChanges"], m => SettingsRouter = m);
 
 export const PermissionsBits: t.PermissionsBits = findLazy(m => typeof m.ADMINISTRATOR === "bigint");
 
-export const { zustandCreate } = mapMangledModuleLazy(["useSyncExternalStoreWithSelector:", "Object.assign"], {
+export const { zustandCreate }: { zustandCreate: typeof import("zustand").create; } = mapMangledModuleLazy(["useSyncExternalStoreWithSelector:", "Object.assign"], {
     zustandCreate: filters.byCode(/=>(\i)\?\i\(\1/)
 });
 
-export const { zustandPersist } = mapMangledModuleLazy(".onRehydrateStorage)?", {
+export const { zustandPersist }: { zustandPersist: typeof import("zustand/middleware").persist; } = mapMangledModuleLazy(".onRehydrateStorage)?", {
     zustandPersist: filters.byCode(/(\(\i,\i\))=>.+?\i\1/)
 });
 

@@ -7,6 +7,10 @@
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 
+import { useCollapsedSectionsStore } from "./CollapsedSectionsStore";
+
+
+
 type Row = {
     type: "MEMBER";
     hoistRoleId: string;
@@ -15,6 +19,9 @@ type Group = {
     type: "GROUP";
     count: number;
     index: number;
+    /**
+     * Role ID
+     */
     id: string;
     key: string;
     title: string;
@@ -49,17 +56,26 @@ export default definePlugin({
         {
             find: 'key:"section-"',
             replacement: {
-                match: /\i\.\i\.getProps\(\i\.guild_id,\i\.id\)/,
-                replace: "$self.wrapMemberStore($&)"
+                match: /\i\.\i\.getProps\((\i\.guild_id),\i\.id\)/,
+                replace: "$self.wrapMemberStore($1)($&)"
             }
         }
     ],
 
-    wrapMemberStore(store: MemberStoreProps): MemberStoreProps {
-        store.groups = store.groups.map(x => ({ ...x }));
+    start() {
+    },
+
+    wrapMemberStore: (guildId: string) => function (store: MemberStoreProps): MemberStoreProps {
+        if (!guildId)
+            return console.log("guildId is not null"), store;
+        const s = useCollapsedSectionsStore();
         store.rows = [...store.rows];
-        removeGroup(store, 1);
-        // fixupIndices(store);
+        store.groups = store.groups.map(x => ({ ...x }));
+        for (let i = store.groups.length; --i >= 0;)
+            if (s.isCollapsed(guildId, store.groups[i].id)) {
+                console.log("removing group");
+                removeGroup(store, i);
+            }
         return store;
     }
 });
