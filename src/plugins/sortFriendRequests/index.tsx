@@ -36,7 +36,12 @@ const formatter = new Intl.DateTimeFormat(undefined, {
 const cl = classNameFactory("vc-sortFriendRequests-");
 
 function getSince(user: User) {
-    return new Date(RelationshipStore.getSince(user.id));
+    try {
+        return new Date(RelationshipStore.getSince(user.id));
+    } catch (e) {
+        console.error(e);
+        return new Date();
+    }
 }
 
 const settings = definePluginSettings({
