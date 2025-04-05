@@ -54,16 +54,24 @@ export default definePlugin({
         }]
     }],
     isPrivateChannelRead(message: MessageJSON) {
-        const channelType = ChannelStore.getChannel(message.channel_id)?.type;
-        if (
-            (channelType !== ChannelType.DM && channelType !== ChannelType.GROUP_DM) ||
-            (channelType === ChannelType.DM && settings.store.channelToAffect === "group_dm") ||
-            (channelType === ChannelType.GROUP_DM && settings.store.channelToAffect === "user_dm") ||
-            (settings.store.allowMentions && message.mentions.some(m => m.id === UserStore.getCurrentUser().id)) ||
-            (settings.store.allowEveryone && message.mention_everyone)
-        ) {
+        // if this fails, the gateway will reconnect
+        // this can fail every time a message is received
+        try {
+            const channelType = ChannelStore.getChannel(message.channel_id)?.type;
+            if (
+                (channelType !== ChannelType.DM && channelType !== ChannelType.GROUP_DM) ||
+                (channelType === ChannelType.DM && settings.store.channelToAffect === "group_dm") ||
+                (channelType === ChannelType.GROUP_DM && settings.store.channelToAffect === "user_dm") ||
+                (settings.store.allowMentions && message.mentions.some(m => m.id === UserStore.getCurrentUser().id)) ||
+                (settings.store.allowEveryone && message.mention_everyone)
+            ) {
+                return true;
+            }
+            return ReadStateStore.getOldestUnreadMessageId(message.channel_id) === message.id;
+        } catch (e) {
+            console.error(e);
+            // Will always send a ping if something errors
             return true;
         }
-        return ReadStateStore.getOldestUnreadMessageId(message.channel_id) === message.id;
     },
 });
