@@ -94,6 +94,11 @@ export default definePlugin({
     ],
 
     getRealMessageRequestCount() {
-        return MessageRequestStore.getMessageRequestChannelIds().size;
+        try {
+            return MessageRequestStore.getMessageRequestChannelIds().size;
+        } catch (e) {
+            console.error(e);
+            return -1;
+        }
     }
 });
