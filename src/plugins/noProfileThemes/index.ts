@@ -34,5 +34,14 @@ export default definePlugin({
         },
     ],
 
-    isCurrentUser: (userId: string) => userId === UserStore.getCurrentUser()?.id,
+    isCurrentUser: (userId: string) => {
+        try {
+            return userId === UserStore.getCurrentUser()?.id;
+        } catch (e) {
+            console.error(e);
+            // This is just choice on which way to fail
+            // it makes more sense to fail in the direction of the plugin
+            return false;
+        }
+    }
 });
