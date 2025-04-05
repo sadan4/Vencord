@@ -35,14 +35,19 @@ export default definePlugin({
         }
     ],
     isGuildOwner(props: { user: User, channel: Channel, isOwner: boolean, guildId?: string; }) {
-        if (!props?.user?.id) return props.isOwner;
-        if (props.channel?.type === 3 /* GROUP_DM */)
-            return props.isOwner;
+        try {
+            if (!props?.user?.id) return props.isOwner;
+            if (props.channel?.type === 3 /* GROUP_DM */)
+                return props.isOwner;
 
-        // guild id is in props twice, fallback if the first is undefined
-        const guildId = props.guildId ?? props.channel?.guild_id;
-        const userId = props.user.id;
+            // guild id is in props twice, fallback if the first is undefined
+            const guildId = props.guildId ?? props.channel?.guild_id;
+            const userId = props.user.id;
 
-        return GuildStore.getGuild(guildId)?.ownerId === userId;
+            return GuildStore.getGuild(guildId)?.ownerId === userId;
+        } catch (e) {
+            console.error(e);
+            return props?.isOwner;
+        }
     },
 });
