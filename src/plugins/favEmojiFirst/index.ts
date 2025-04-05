@@ -66,23 +66,27 @@ export default definePlugin({
     ],
 
     sortEmojis({ query }: EmojiAutocompleteState) {
-        if (
-            query?.type !== "EMOJIS_AND_STICKERS"
-            || query.typeInfo?.sentinel !== ":"
-            || !query.results?.emojis?.length
-        ) return;
+        try {
+            if (
+                query?.type !== "EMOJIS_AND_STICKERS"
+                || query.typeInfo?.sentinel !== ":"
+                || !query.results?.emojis?.length
+            ) return;
 
-        const emojiContext = EmojiStore.getDisambiguatedEmojiContext();
+            const emojiContext = EmojiStore.getDisambiguatedEmojiContext();
 
-        query.results.emojis = query.results.emojis.sort((a, b) => {
-            const aIsFavorite = emojiContext.isFavoriteEmojiWithoutFetchingLatest(a);
-            const bIsFavorite = emojiContext.isFavoriteEmojiWithoutFetchingLatest(b);
+            query.results.emojis = query.results.emojis.sort((a, b) => {
+                const aIsFavorite = emojiContext.isFavoriteEmojiWithoutFetchingLatest(a);
+                const bIsFavorite = emojiContext.isFavoriteEmojiWithoutFetchingLatest(b);
 
-            if (aIsFavorite && !bIsFavorite) return -1;
+                if (aIsFavorite && !bIsFavorite) return -1;
 
-            if (!aIsFavorite && bIsFavorite) return 1;
+                if (!aIsFavorite && bIsFavorite) return 1;
 
-            return 0;
-        }).slice(0, query.results.emojis.sliceTo ?? Infinity);
+                return 0;
+            }).slice(0, query.results.emojis.sliceTo ?? Infinity);
+        } catch (e) {
+            console.error(e);
+        }
     }
 });
