@@ -66,12 +66,17 @@ export default definePlugin({
     },
 
     getMessageProps(props: { message: Message; }) {
-        const author = props.message?.author;
-        const authorId = author?.id;
-        return {
-            "data-author-id": authorId,
-            "data-author-username": author?.username,
-            "data-is-self": authorId && authorId === UserStore.getCurrentUser()?.id,
-        };
+        try {
+            const author = props.message?.author;
+            const authorId = author?.id;
+            return {
+                "data-author-id": authorId,
+                "data-author-username": author?.username,
+                "data-is-self": authorId && authorId === UserStore.getCurrentUser()?.id,
+            };
+        } catch (e) {
+            console.error(e);
+            return {};
+        }
     }
 });
