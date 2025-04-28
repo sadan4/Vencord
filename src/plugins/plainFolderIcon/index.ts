@@ -16,28 +16,81 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
-import definePlugin from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
+
+const enum Style {
+    STANDARD,
+    SOLID
+}
+
+const settings = definePluginSettings({
+    alternateStyle: {
+        type: OptionType.SELECT,
+        description: "The style of folder icons to use",
+        restartNeeded: true,
+        options: [
+            {
+                label: "Standard",
+                value: Style.STANDARD,
+                default: true
+            },
+            {
+                label: "Solid Colors",
+                value: Style.SOLID,
+            }
+        ]
+    },
+    applyToOpenedFolders: {
+        type: OptionType.BOOLEAN,
+        description: "Also apply the style to opened folders, if applicable",
+        default: false,
+        restartNeeded: true
+    }
+});
 
 export default definePlugin({
     name: "PlainFolderIcon",
     description: "Doesn't show the small guild icons in folders",
-    authors: [Devs.botato],
-    patches: [{
-        find: ".expandedFolderIconWrapper",
-        replacement: [
-            // there are two elements, the first one is the plain folder icon
-            // the second is the four guild preview icons
-            // always show this one (the plain icons)
-            {
-                match: /\(\i\|\|\i\)&&(\(.{0,40}\(\i\.animated)/,
-                replace: "$1",
-            },
-            // and never show this one (the guild preview icons)
-            {
-                match: /\(\i\|\|!\i\)&&(\(.{0,40}\(\i\.animated)/,
-                replace: "false&&$1",
-            }
-        ]
-    }]
+    authors: [Devs.botato, Devs.sadan],
+
+    settings,
+
+    patches: [
+        {
+            find: ".expandedFolderIconWrapper",
+            replacement: [
+                // there are two elements, the first one is the plain folder icon
+                // the second is the four guild preview icons
+                // always show this one (the plain icons)
+                {
+                    match: /\(\i\|\|\i\)&&(\(.{0,40}\(\i\.animated)/,
+                    replace: "$1",
+                },
+                // and never show this one (the guild preview icons)
+                {
+                    match: /\(\i\|\|!\i\)&&(\(.{0,40}\(\i\.animated)/,
+                    replace: "false&&$1",
+                },
+                // set the folder icon color to white
+                {
+                    predicate: () => settings.store.alternateStyle === Style.SOLID,
+                    match: /style:\{color:/,
+                    replace: "$&'white',_color:"
+                },
+                // background opacity .4 => 1
+                {
+                    predicate: () => settings.store.alternateStyle === Style.SOLID,
+                    match: /(?<=\i,).4/,
+                    replace: "1"
+                },
+                {
+                    predicate: () => settings.store.alternateStyle === Style.SOLID && settings.store.applyToOpenedFolders,
+                    match: /(let\{[^}]+?)(expanded:\i)/,
+                    replace: "$1_$2=false"
+                }
+            ]
+        },
+    ]
 });
