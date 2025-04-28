@@ -17,8 +17,12 @@
 */
 
 import { Settings, SettingsStore } from "@api/Settings";
+import { findModuleId, wreq } from "@webpack";
 import { ThemeStore } from "@webpack/common";
 
+import { Logger } from "./Logger";
+
+const logger = new Logger("QuickCSS");
 
 let style: HTMLStyleElement;
 let themesStyle: HTMLStyleElement;
@@ -90,6 +94,19 @@ async function initThemes() {
 
 document.addEventListener("DOMContentLoaded", () => {
     initSystemValues();
+    // if the theme store is not loaded yet, try to load it
+    if (!ThemeStore) {
+        const maybeThemeStoreID = findModuleId('"displayName","ThemeStore"');
+        if (maybeThemeStoreID) {
+            wreq(maybeThemeStoreID);
+        }
+    }
+
+    if (!ThemeStore) {
+        logger.error("Failed to load ThemeStore");
+        return;
+    }
+
     initThemes();
 
     toggle(Settings.useQuickCss);
