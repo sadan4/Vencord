@@ -19,35 +19,20 @@
         "noImplicitAny": false,
         "target": "ESNEXT",
         "jsx": "preserve",
+
+        "baseUrl": "./src/",
         "paths": {
-            "@main/*": [
-                "./src/main/*"
-            ],
-            "@api/*": [
-                "./src/api/*"
-            ],
-            "@components/*": [
-                "./src/components/*"
-            ],
-            "@utils/*": [
-                "./src/utils/*"
-            ],
-            "@shared/*": [
-                "./src/shared/*"
-            ],
-            "@webpack/common": [
-                "./src/webpack/common"
-            ],
-            "@webpack": [
-                "./src/webpack/webpack"
-            ],
-            "@webpack/patcher": [
-                "./src/webpack/patchWebpack"
-            ],
-            "@webpack/wreq.d": [
-                "./src/webpack/wreq.d"
-            ],
+            "@main/*": ["./main/*"],
+            "@api/*": ["./api/*"],
+            "@components/*": ["./components/*"],
+            "@utils/*": ["./utils/*"],
+            "@shared/*": ["./shared/*"],
+            "@webpack/common": ["./webpack/common"],
+            "@webpack": ["./webpack/webpack"],
+            "@webpack/patcher": ["./webpack/patchWebpack"],
+            "@webpack/wreq.d": ["./webpack/wreq.d"],
         },
+
         "plugins": [
             // Transform paths in output .d.ts files (Include this line if you output declarations files)
             {
