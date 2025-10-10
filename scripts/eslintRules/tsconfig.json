@@ -9,5 +9,6 @@
         "moduleDetection": "force",
         "allowImportingTsExtensions": true,
         "emitDeclarationOnly": true,
+        "strict": true,
     }
 }
