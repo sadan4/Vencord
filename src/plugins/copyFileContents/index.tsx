@@ -12,12 +12,14 @@ import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/misc";
 import definePlugin from "@utils/types";
 import { Tooltip, useState } from "@webpack/common";
+import { ReactNode, useCallback } from "react";
 
-const CheckMarkIcon = () => {
+function CheckMarkIcon(): ReactNode {
+    useCallback(() => { }, []);
     return <svg width="24" height="24" viewBox="0 0 24 24">
         <path fill="currentColor" d="M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z"></path>
     </svg>;
-};
+}
 
 export default definePlugin({
     name: "CopyFileContents",

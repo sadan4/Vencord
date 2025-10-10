@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "allowArbitraryExtensions": true,
+        "verbatimModuleSyntax": true,
+        "erasableSyntaxOnly": true,
+        "moduleDetection": "force",
+        "allowImportingTsExtensions": true,
+        "emitDeclarationOnly": true,
+    }
+}

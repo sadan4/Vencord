@@ -12,6 +12,8 @@ import simpleImportSort from "eslint-plugin-simple-import-sort";
 import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 
+import vencord from "./scripts/eslintRules/index.ts";
+
 export default tseslint.config(
     { ignores: ["dist", "browser", "packages/vencord-types"] },
     {
@@ -38,7 +40,8 @@ export default tseslint.config(
             "@typescript-eslint": tseslint.plugin,
             "simple-import-sort": simpleImportSort,
             "unused-imports": unusedImports,
-            "path-alias": pathAlias
+            "path-alias": pathAlias,
+            vencord,
         },
         settings: {
             "import/resolver": {
@@ -141,7 +144,8 @@ export default tseslint.config(
             "simple-import-sort/imports": "error",
             "simple-import-sort/exports": "error",
             "unused-imports/no-unused-imports": "error",
-            "path-alias/no-relative": "error"
+            "path-alias/no-relative": "error",
+            "vencord/banned-imports": "error",
         }
     }
 );
