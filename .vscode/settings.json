@@ -22,5 +22,6 @@
     "css.format.spaceAroundSelectorSeparator": true,
     "[css]": {
         "editor.defaultFormatter": "vscode.css-language-features"
-    }
+    },
+    "typescript.tsdk": "node_modules/typescript/lib"
 }

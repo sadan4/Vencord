@@ -16,3 +16,9 @@ export function unreachable(): never {
 export function todo(msg?: string): never {
     throw new VencordLintInternalError(`TODO${msg ? `: ${msg}` : ""}`);
 }
+
+export function assert(condition: unknown, msg?: string): asserts condition {
+    if (!condition) {
+        throw new VencordLintInternalError(`Assertion failed${msg ? `: ${msg}` : ""}`);
+    }
+}
