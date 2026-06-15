@@ -1,4 +1,6 @@
-# No Follow Forwards
+# Better Forwards
+
+# Dont Follow Forwards
 
 Don't follow forwarded messages after sending them.
 
