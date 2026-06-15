@@ -22,6 +22,7 @@ const settings = definePluginSettings({
     },
     dontFollowForwards: {
         description: "After forwarding a single message, don't jump to it. Hold shift to ignore this behavior",
+        displayName: "Don't Follow Forwards",
         type: OptionType.BOOLEAN,
         default: false,
     }
@@ -33,7 +34,7 @@ migratePluginSettings("BetterForwards", "ForwardAnywhere");
 
 export default definePlugin({
     name: "BetterForwards",
-    description: "If a forward fails send it as a normal message also allows nsfw forwards. See settings for more options",
+    description: "If a forward fails, send it as a normal message. Also allows nsfw forwards. See settings for various other improvements to forwarding.",
     tags: ["Chat", "Utility"],
     authors: [Devs.thororen],
     settings,
