@@ -9,6 +9,7 @@ import { Devs } from "@utils/constants";
 import { sendMessage } from "@utils/discord";
 import definePlugin, { OptionType } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
+import { MouseEvent } from "react";
 
 // Taken From Signature :)
 const settings = definePluginSettings({
@@ -96,7 +97,7 @@ export default definePlugin({
         return ignore ? origCond : false;
     },
 
-    setShift(event: KeyboardEvent | undefined) {
+    setShift(event: MouseEvent | undefined) {
         ignore = !!event?.shiftKey;
     }
 });
