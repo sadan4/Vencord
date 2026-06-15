@@ -28,7 +28,6 @@
 - Never boxed primitives (`Number`, `String`, `Boolean`, `Object`, `Function`, `{}`).
 - Never `namespace`. Modules only.
 - Never `../../` when `@alias` exists.
-- `import type` for type-only imports, including from `"react"`. Plain `import { ReactNode }` is violation.
 - `satisfies T` over `as T` when value already conforms. `as` only for genuine narrowing.
 
 ## Plugin Policy
