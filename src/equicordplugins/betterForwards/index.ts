@@ -33,7 +33,6 @@ const settings = definePluginSettings({
 let ignore = false;
 
 migratePluginSettings("BetterForwards", "ForwardAnywhere");
-
 export default definePlugin({
     name: "BetterForwards",
     description: "If a forward fails, send it as a normal message. Also allows nsfw forwards. See settings for various other improvements to forwarding.",
