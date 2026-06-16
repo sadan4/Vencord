@@ -26,6 +26,7 @@ const settings = definePluginSettings({
         displayName: "Don't Follow Forwards",
         type: OptionType.BOOLEAN,
         default: false,
+        restartNeeded: true,
     }
 });
 
