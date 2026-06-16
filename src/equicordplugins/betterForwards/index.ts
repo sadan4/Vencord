@@ -11,6 +11,8 @@ import definePlugin, { OptionType } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
 import { MouseEvent } from "react";
 
+let ignore = false;
+
 // Taken From Signature :)
 const settings = definePluginSettings({
     forwardPreface: {
@@ -29,8 +31,6 @@ const settings = definePluginSettings({
         restartNeeded: true,
     }
 });
-
-let ignore = false;
 
 migratePluginSettings("BetterForwards", "ForwardAnywhere");
 export default definePlugin({
