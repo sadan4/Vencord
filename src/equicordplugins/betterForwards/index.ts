@@ -37,7 +37,7 @@ export default definePlugin({
     name: "BetterForwards",
     description: "If a forward fails, send it as a normal message. Also allows nsfw forwards. See settings for various other improvements to forwarding.",
     tags: ["Chat", "Utility"],
-    authors: [Devs.thororen],
+    authors: [Devs.thororen, Devs.sadan],
     settings,
     patches: [
         {
