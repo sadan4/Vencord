@@ -56,24 +56,20 @@ export default definePlugin({
             }
         },
         {
-            // ,3e3,{leading:!0,trailing:!1})
-            find: ".FORWARD))},3e3",
-            predicate: () => settings.store.dontFollowForwards,
-            replacement: {
-                match: /(?<=transitionToDestination:)(1===\i\.length)(?=,|\})/,
-                replace: "$self.shouldTransition($1)"
-            }
-        },
-        {
-            // the event for clicking the final forward button is dispatched here
             find: "#{intl::MESSAGE_FORWARD_MESSAGE_PLACEHOLDER}",
             predicate: () => settings.store.dontFollowForwards,
-            replacement: {
-                // there are two useCallbacks with clearDraft in this module
-                // we need to anchor to the one that is used as an onClick handler
-                match: /((\i)=\i\.useCallback\(\()(\)=>\{)(null!=\i&&\i\.\i\.clearDraft)(?=.{1500,2000}onClick:\2)/,
-                replace: (_, beforeParen, _1, beforeBody, body) => `${beforeParen}vencordArg1${beforeBody}$self.setShift(vencordArg1);${body}`
-            }
+            replacement: [
+                {
+                    match: /(?<=transitionToDestination:)(1===\i\.length)(?=,|\})/,
+                    replace: "$self.shouldTransition($1)"
+                },
+                {
+                    // there are two useCallbacks with clearDraft in this module
+                    // we need to anchor to the one that is used as an onClick handler
+                    match: /((\i)=\i\.useCallback\(\()(\)=>\{)(null!=\i&&\i\.\i\.clearDraft)(?=.{1500,2000}onClick:\2)/,
+                    replace: (_, beforeParen, _1, beforeBody, body) => `${beforeParen}vencordArg1${beforeBody}$self.setShift(vencordArg1);${body}`
+                }
+            ]
         }
     ],
 
