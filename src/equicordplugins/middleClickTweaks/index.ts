@@ -101,10 +101,10 @@ export default definePlugin({
     patches: [
         {
             // Detects paste events triggered by the "browser" outside of input fields.
-            find: "document.addEventListener(\"paste\",",
+            find: ".GLOBAL_CLIPBOARD_PASTE,{event:",
             replacement: {
-                match: /(?<=paste",(\i)=>{)/,
-                replace: "if($1.target.tagName===\"BUTTON\"||$self.isPastingDisabled(false)){$1.preventDefault?.();$1.stopPropagation?.();return;};"
+                match: /(?<=function (\i)\((\i)\){)(?=.{0,150}return document\.addEventListener\("paste",\1\))/,
+                replace: "if($1.target.tagName===\"BUTTON\"||$self.isPastingDisabled(false)){$2.preventDefault?.();$2.stopPropagation?.();return;};"
             }
         },
         {
