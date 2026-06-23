@@ -104,7 +104,7 @@ export default definePlugin({
             find: ".GLOBAL_CLIPBOARD_PASTE,{event:",
             replacement: {
                 match: /(?<=function (\i)\((\i)\){)(?=.{0,150}return document\.addEventListener\("paste",\1\))/,
-                replace: "if($1.target.tagName===\"BUTTON\"||$self.isPastingDisabled(false)){$2.preventDefault?.();$2.stopPropagation?.();return;};"
+                replace: "if($2.target.tagName===\"BUTTON\"||$self.isPastingDisabled(false)){$2.preventDefault?.();$2.stopPropagation?.();return;};"
             }
         },
         {
