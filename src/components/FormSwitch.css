@@ -32,11 +32,3 @@
     flex-shrink: 0;
     padding-top: 2px;
 }
-
-.vc-form-switch-border {
-    margin-top: 20px;
-}
-
-.vc-form-switch-description {
-    color: var(--text-subtle);
-}
