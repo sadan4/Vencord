@@ -327,8 +327,8 @@ export default definePlugin({
     },
 
     makeInfoElements(Component: ComponentType<PropsWithChildren<{ className?: string; }>>, className: string) {
-        return this.getInfoRows().map((text, i) => (
+        return this.getInfoRows().map((text, i) =>
             <Component key={i} className={className}>{text}</Component>
-        ));
-    },
+        );
+    }
 });
