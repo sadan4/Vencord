@@ -56,7 +56,7 @@ const symbolPattern = /^[\p{S}\p{P}]{1,3}$/iu;
 const templatePattern = /(?:\{(?:custom|friend|nick|display|user)(?:,\s*(?:custom|friend|nick|display|user))*\})/iu;
 
 type CustomNicknameData = Record<string, string>;
-let customNicknames: CustomNicknameData = {};
+export let customNicknames: CustomNicknameData = {};
 
 let toCSSCache: Map<string, string | null> | null = null;
 let toCSSProbe: HTMLDivElement | null = null;
