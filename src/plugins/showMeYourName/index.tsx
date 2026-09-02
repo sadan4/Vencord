@@ -56,7 +56,7 @@ const symbolPattern = /^[\p{S}\p{P}]{1,3}$/iu;
 const templatePattern = /(?:\{(?:custom|friend|nick|display|user)(?:,\s*(?:custom|friend|nick|display|user))*\})/iu;
 
 type CustomNicknameData = Record<string, string>;
-export let customNicknames: CustomNicknameData = {};
+let customNicknames: CustomNicknameData = {};
 
 let toCSSCache: Map<string, string | null> | null = null;
 let toCSSProbe: HTMLDivElement | null = null;
@@ -385,6 +385,12 @@ function getTypingMemberListProfilesReactionsVoiceNameText(props: memberListProf
 
 function getTypingMemberListProfilesReactionsVoiceNameElement(props: memberListProfileReactionProps): JSX.Element | null {
     return getTypingMemberListProfilesReactionsVoiceName(props)[1];
+}
+
+function matchableCustomName(userId: string) {
+    const custom = customNicknames[userId];
+    if (!custom || (settings.store.customNameOnlyInDirectMessages && getCurrentChannel()?.guild_id)) return "";
+    return custom.toLocaleLowerCase();
 }
 
 function getActiveNowNameElement({ user, guildId, isHovered }: activeNowNameProps): JSX.Element | string | null {
@@ -1254,12 +1260,6 @@ const settings = definePluginSettings({
     },
 });
 
-function matchableCustomName(userId: string) {
-    const custom = customNicknames[userId];
-    if (!custom || (settings.store.customNameOnlyInDirectMessages && getCurrentChannel()?.guild_id)) return "";
-    return custom.toLocaleLowerCase();
-}
-
 export default definePlugin({
     name: "ShowMeYourName",
     description: "Display any permutation of custom nicknames, friend nicknames, server nicknames, display names, and usernames in chat.",
@@ -1524,6 +1524,14 @@ export default definePlugin({
                     replace: "$&||$1()($2,$self.matchableCustomName($3.id))"
                 }
             ]
+        },
+        {
+            // above but in the ui
+            find: "#{intl::COMMANDS_OPTIONAL_COUNT}",
+            replacement: {
+                match: /\i\?\?\i\?\?\i\.\i\.getName\(\i\)/,
+                replace: '$self.getTypingMemberListProfilesReactionsVoiceNameText({user:this.props.user,guildId:this.props.guildId,type:"membersList"})'
+            }
         }
     ],
 
