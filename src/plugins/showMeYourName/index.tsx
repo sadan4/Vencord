@@ -1369,7 +1369,7 @@ export default definePlugin({
             ],
         },
         {
-            find: '("NowPlayingHeader")',
+            find: ".NOW_PLAYING_ITEM_GAME_SECTION)",
             group: true,
             replacement: [
                 {
