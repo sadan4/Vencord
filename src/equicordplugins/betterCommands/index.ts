@@ -15,7 +15,7 @@ const settings = definePluginSettings({
         description: "Automatically fill command with all arguments instead of just required ones.",
         type: OptionType.BOOLEAN,
         default: true,
-    }, a
+    },
 });
 
 function fetchIndex(target: object) {
