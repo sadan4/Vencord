@@ -1621,7 +1621,7 @@ export default definePlugin({
             }
         },
         {
-            // Replace names in the from: and mentions: search filter suggestions.
+            // Replace names in the search filter suggestions.
             find: "hasOtherSearchFiltersVisible",
             replacement: {
                 match: /(\i)=(\i\.\i\.useName\((\i),\i,(\i)\))/,
