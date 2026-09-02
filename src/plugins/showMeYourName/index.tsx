@@ -1204,7 +1204,7 @@ const settings = definePluginSettings({
     searchAutocomplete: {
         type: OptionType.BOOLEAN,
         default: true,
-        description: "Display the first available name listed in your custom name format in mention and search autocomplete",
+        description: "Display the first available name listed in your custom name format in mention and search autocomplete.",
     },
     profilePopout: {
         type: OptionType.BOOLEAN,
