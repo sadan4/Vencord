@@ -1526,7 +1526,7 @@ export default definePlugin({
             ]
         },
         {
-            // above but in the ui
+            // Let the mention autocomplete ui have our custom names, support our formatting, etc.
             find: "#{intl::COMMANDS_OPTIONAL_COUNT}",
             replacement: {
                 match: /\i\?\?\i\?\?\i\.\i\.getName\(\i\)/,

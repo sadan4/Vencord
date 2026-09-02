@@ -20,7 +20,7 @@ import { isPluginEnabled } from "@api/PluginManager";
 import { definePluginSettings, migratePluginToSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { getCustomColorString } from "@equicordplugins/customUserColors";
-import ShowMeYourName from "@plugins/showMeYourName";
+import showMeYourName from "@plugins/showMeYourName";
 import { Devs, EquicordDevs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { openUserProfile } from "@utils/discord";
@@ -106,8 +106,8 @@ const TypingUser = ErrorBoundary.wrap(function TypingUser({ user, guildId }: Typ
                     size="SIZE_16"
                     src={user.getAvatarURL(guildId, 128)} />
             )}
-            {isPluginEnabled(ShowMeYourName.name)
-                && ShowMeYourName.getTypingMemberListProfilesReactionsVoiceNameText({ user, guildId, type: "typingIndicator" })
+            {isPluginEnabled(showMeYourName.name)
+                && showMeYourName.getTypingMemberListProfilesReactionsVoiceNameText({ user, guildId, type: "typingIndicator" })
                 || GuildMemberStore.getNick(guildId!, user.id)
                 || (!guildId && RelationshipStore.getNickname(user.id))
                 || (user as any).globalName
