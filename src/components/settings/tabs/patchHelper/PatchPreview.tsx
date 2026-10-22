@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import type { FormatMapping } from "@sadan4/devtools-pretty-printer";
 import { Margins } from "@utils/margins";
 import { canonicalizeMatch, canonicalizeReplace } from "@utils/patches";
 import { makeCodeblock } from "@utils/text";
@@ -14,6 +15,7 @@ import type { Change } from "diff";
 // Do not include diff in standalone builds (side effects import)
 if (!IS_STANDALONE) {
     var differ = require("diff") as typeof import("diff");
+    var pp = require("@sadan4/devtools-pretty-printer") as typeof import("@sadan4/devtools-pretty-printer");
 }
 
 interface PatchPreviewProps {
@@ -21,6 +23,21 @@ interface PatchPreviewProps {
     match: string;
     replacement: string | ReplaceFn;
     setReplacementError(error: any): void;
+}
+
+interface FormattedCode {
+    code: string;
+    mappings: FormatMapping;
+}
+
+function formatCode(originalCode: string): FormattedCode {
+    const contentBuilder = new pp.FormattedContentBuilder("  ");
+    const fmt = new pp.JavaScriptFormatter(contentBuilder);
+    fmt.format(originalCode, pp.findLineEndingIndexes(originalCode), 0, originalCode.length);
+    return {
+        code: contentBuilder.content(),
+        mappings: contentBuilder.mapping
+    };
 }
 
 function makeDiff(original: string, patched: string, match: RegExpMatchArray | null) {
